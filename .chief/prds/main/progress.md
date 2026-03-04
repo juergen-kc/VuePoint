@@ -490,3 +490,24 @@
   - The `screenshot` field was pre-wired across types, store, and output formatter — a good example of interface-first design reducing implementation effort
   - Base64 PNG screenshots can be large (100KB+) — the opt-in design is important to avoid bloating WebSocket/webhook payloads
 ---
+
+## 2026-03-04 - US-028
+- Implemented webhook delivery log UI — settings panel in toolbar showing delivery history
+- Added `WebhookDeliveryLog` type to `@vuepoint/core` (id, event, url, statusCode, success, timestamp, retryCount, error)
+- API server: `deliverWebhookTracked()` logs every delivery attempt with status code and error; `logDelivery()` caps at 200 entries and broadcasts via WebSocket
+- Added `GET /api/v1/webhooks/deliveries` endpoint for fetching log history
+- Added `POST /api/v1/webhooks/retry` endpoint for retrying failed deliveries by delivery ID
+- Bridge: added `webhook_delivery` event type to `BridgeEvent` union; SharedWorker forwards these from API WebSocket to all connected tabs
+- Plugin.ts: listens for `webhook_delivery` bridge events and dispatches `vuepoint:webhook-delivery` custom DOM event to the isolated toolbar app
+- VuePointToolbar: new `'settings'` UI mode with delivery log panel; `shallowRef<WebhookDeliveryLog[]>` holds recent deliveries (max 50 in UI)
+- Each delivery entry shows: status dot (green/red), event type, HTTP status code, URL, timestamp, retry count badge
+- Failed deliveries highlighted with red background; "Retry" button calls the retry endpoint
+- Settings button (activity/pulse icon) in toolbar with red badge showing failed delivery count
+- Typecheck passes clean
+- Files changed: types.ts (WebhookDeliveryLog type), index.ts (export), api.ts (delivery tracking + endpoints), bridge/types.ts (event type), bridge/worker.ts (forwarding), plugin.ts (DOM event dispatch), VuePointToolbar.vue (settings panel + button + styles), prd.json, progress.md
+- **Learnings for future iterations:**
+  - The toolbar runs in an isolated Vue app — can't share reactive state via provide/inject with plugin.ts. Use DOM custom events (`document.dispatchEvent(new CustomEvent(...))`) to bridge the gap
+  - `shallowRef` is better than `ref` for arrays that get replaced entirely (like delivery logs) — avoids deep reactivity overhead on objects that don't need individual property tracking
+  - Delivery log should be capped both server-side (200) and UI-side (50) to prevent memory growth in long-running sessions
+  - `deliverWebhookTracked` wraps the raw delivery function to separate concerns: the raw function returns status details, the tracked wrapper logs and broadcasts
+---

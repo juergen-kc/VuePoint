@@ -147,6 +147,11 @@ const VuePoint: Plugin<VuePointOptions | undefined> = {
           case 'annotations_cleared':
             origClear()
             break
+          case 'webhook_delivery':
+            document.dispatchEvent(
+              new CustomEvent('vuepoint:webhook-delivery', { detail: event.delivery })
+            )
+            break
         }
       } finally {
         patchedStore._bridgeSyncing = false

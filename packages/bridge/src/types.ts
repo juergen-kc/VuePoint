@@ -5,7 +5,7 @@
  * All messages are typed unions discriminated by the `type` field.
  */
 
-import type { Annotation, AnnotationCreateInput } from '@vuepoint/core'
+import type { Annotation, AnnotationCreateInput, WebhookDeliveryLog } from '@vuepoint/core'
 
 // ─── Tab → Worker messages ──────────────────────────────────────────────────
 
@@ -31,6 +31,7 @@ export type BridgeEvent =
   | { type: 'context_updated'; context: AppContext }
   | { type: 'connected'; tabId: string; tabCount: number }
   | { type: 'question_received'; id: string; question: string }
+  | { type: 'webhook_delivery'; delivery: WebhookDeliveryLog }
 
 // ─── App context ────────────────────────────────────────────────────────────
 

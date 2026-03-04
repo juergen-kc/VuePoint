@@ -12,11 +12,11 @@
  *   - All VuePoint DOM is data-vuepoint="true" so the inspector can skip it
  */
 
-import { ref, computed, onMounted, onUnmounted, defineOptions } from 'vue'
+import { ref, computed, onMounted, onUnmounted, defineOptions, shallowRef } from 'vue'
 import html2canvas from 'html2canvas'
 
 defineOptions({ name: 'VuePointToolbar' })
-import type { VuePointOptions, AnnotationElement, AnnotationRect } from '@vuepoint/core'
+import type { VuePointOptions, AnnotationElement, AnnotationRect, WebhookDeliveryLog } from '@vuepoint/core'
 import {
   generateSelector,
   describeElement,
@@ -55,7 +55,7 @@ function toggleTheme() {
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
-type UIMode = 'idle' | 'annotating' | 'panel'
+type UIMode = 'idle' | 'annotating' | 'panel' | 'settings'
 
 const mode = ref<UIMode>('idle')
 const isExpanded = ref(false)
@@ -96,6 +96,36 @@ const textSelection = ref<{
   containingElement: Element
   rect: AnnotationRect
 } | null>(null)
+
+// ─── Webhook delivery log state ─────────────────────────────────────────────
+
+const webhookDeliveries = shallowRef<WebhookDeliveryLog[]>([])
+const MAX_UI_DELIVERIES = 50
+
+function handleWebhookDelivery(e: Event) {
+  const delivery = (e as CustomEvent<WebhookDeliveryLog>).detail
+  webhookDeliveries.value = [delivery, ...webhookDeliveries.value].slice(0, MAX_UI_DELIVERIES)
+}
+
+const failedDeliveryCount = computed(
+  () => webhookDeliveries.value.filter((d) => !d.success).length
+)
+
+async function retryDelivery(delivery: WebhookDeliveryLog) {
+  try {
+    const res = await fetch('http://127.0.0.1:3742/api/v1/webhooks/retry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: delivery.id }),
+    })
+    if (!res.ok) {
+      console.error('[VuePoint] Retry failed:', await res.text())
+    }
+    // The result will arrive via bridge event and update the deliveries list
+  } catch (err) {
+    console.error('[VuePoint] Retry error:', err)
+  }
+}
 
 function checkTextSelection() {
   const sel = window.getSelection()
@@ -168,11 +198,13 @@ const questionCount = computed(() => props.annotationsStore.withUnansweredQuesti
 onMounted(() => {
   document.addEventListener('vuepoint:toggle', handleToggle)
   document.addEventListener('selectionchange', checkTextSelection)
+  document.addEventListener('vuepoint:webhook-delivery', handleWebhookDelivery)
 })
 
 onUnmounted(() => {
   document.removeEventListener('vuepoint:toggle', handleToggle)
   document.removeEventListener('selectionchange', checkTextSelection)
+  document.removeEventListener('vuepoint:webhook-delivery', handleWebhookDelivery)
   exitAnnotationMode()
   removePauseStyle()
 })
@@ -540,6 +572,15 @@ function handleReplyQuestion(id: string, reply: string) {
   props.annotationsStore.replyToQuestion(id, reply)
 }
 
+function formatDeliveryTime(timestamp: string): string {
+  try {
+    const d = new Date(timestamp)
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  } catch {
+    return timestamp
+  }
+}
+
 function getCurrentRoute(): string | undefined {
   // Read from vue-router if available on window (non-invasive)
   try {
@@ -662,6 +703,47 @@ function getCurrentRoute(): string | undefined {
       />
     </Transition>
 
+    <!-- Webhook delivery log (settings panel) -->
+    <Transition name="vp-slide">
+      <div v-if="isExpanded && mode === 'settings'" data-vuepoint="true" class="vp-settings-panel">
+        <div class="vp-panel-header">
+          <span class="vp-panel-title">Webhook Deliveries</span>
+          <button class="vp-btn-ghost" title="Close" @click="isExpanded = false; mode = 'idle'">✕</button>
+        </div>
+        <div v-if="webhookDeliveries.length === 0" class="vp-settings-empty">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="1.5">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+          <p>No webhook deliveries yet.</p>
+        </div>
+        <div v-else class="vp-delivery-list">
+          <div
+            v-for="d in webhookDeliveries"
+            :key="d.id"
+            class="vp-delivery-item"
+            :class="{ 'vp-delivery-item--failed': !d.success }"
+          >
+            <div class="vp-delivery-row">
+              <span class="vp-delivery-status-dot" :class="d.success ? 'vp-dot--ok' : 'vp-dot--fail'" />
+              <span class="vp-delivery-event">{{ d.event }}</span>
+              <span v-if="d.statusCode" class="vp-delivery-code" :class="d.success ? '' : 'vp-delivery-code--fail'">{{ d.statusCode }}</span>
+              <span v-if="d.retryCount > 0" class="vp-delivery-retry-badge">retry #{{ d.retryCount }}</span>
+            </div>
+            <div class="vp-delivery-row vp-delivery-row--meta">
+              <span class="vp-delivery-url" :title="d.url">{{ d.url }}</span>
+              <span class="vp-delivery-time">{{ formatDeliveryTime(d.timestamp) }}</span>
+            </div>
+            <div v-if="d.error" class="vp-delivery-error">{{ d.error }}</div>
+            <button
+              v-if="!d.success"
+              class="vp-btn-retry"
+              @click.stop="retryDelivery(d)"
+            >Retry</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Toolbar FAB -->
     <div class="vp-toolbar">
       <!-- Annotate button -->
@@ -766,6 +848,19 @@ function getCurrentRoute(): string | undefined {
         <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
+      </button>
+
+      <!-- Webhook settings -->
+      <button
+        class="vp-icon-btn"
+        :class="{ 'vp-icon-btn--active': mode === 'settings', 'vp-icon-btn--alert': failedDeliveryCount > 0 }"
+        title="Webhook deliveries"
+        @click="mode = mode === 'settings' ? 'idle' : 'settings'; isExpanded = mode === 'settings'"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <span v-if="failedDeliveryCount > 0" class="vp-failed-badge">{{ failedDeliveryCount }}</span>
       </button>
     </div>
   </div>
@@ -1063,6 +1158,193 @@ function getCurrentRoute(): string | undefined {
 }
 .vp-btn-primary:hover:not(:disabled) { background: var(--vp-accent-hover); }
 .vp-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Webhook settings icon alert ──────────────────────────────────────────── */
+.vp-icon-btn--alert {
+  position: relative;
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.vp-failed-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #ef4444;
+  color: white;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* ── Settings panel (webhook delivery log) ───────────────────────────────── */
+.vp-settings-panel {
+  position: fixed;
+  bottom: 72px;
+  right: 20px;
+  width: 420px;
+  max-height: 420px;
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px var(--vp-shadow);
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.vp-settings-panel .vp-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--vp-bg-header);
+  border-bottom: 1px solid var(--vp-border);
+  flex-shrink: 0;
+}
+
+.vp-settings-panel .vp-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vp-text);
+}
+
+.vp-settings-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 20px;
+  color: var(--vp-text-faint);
+  text-align: center;
+}
+.vp-settings-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.vp-delivery-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0;
+}
+.vp-delivery-list::-webkit-scrollbar { width: 4px; }
+.vp-delivery-list::-webkit-scrollbar-thumb { background: var(--vp-border); border-radius: 4px; }
+
+.vp-delivery-item {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--vp-border-subtle);
+  transition: background 0.1s;
+}
+.vp-delivery-item:hover { background: var(--vp-bg-hover); }
+.vp-delivery-item--failed {
+  background: rgba(239, 68, 68, 0.06);
+}
+.vp-delivery-item--failed:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.vp-delivery-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vp-delivery-row--meta {
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.vp-delivery-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.vp-dot--ok { background: #22c55e; }
+.vp-dot--fail { background: #ef4444; }
+
+.vp-delivery-event {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--vp-text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vp-delivery-code {
+  font-size: 11px;
+  font-weight: 600;
+  color: #22c55e;
+  font-family: 'Courier New', monospace;
+}
+.vp-delivery-code--fail {
+  color: #ef4444;
+}
+
+.vp-delivery-retry-badge {
+  font-size: 10px;
+  font-weight: 500;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.vp-delivery-url {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--vp-text-muted);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vp-delivery-time {
+  font-size: 10px;
+  color: var(--vp-text-hint);
+  flex-shrink: 0;
+}
+
+.vp-delivery-error {
+  margin-top: 3px;
+  font-size: 11px;
+  color: #ef4444;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vp-btn-retry {
+  margin-top: 4px;
+  height: 22px;
+  padding: 0 8px;
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.vp-btn-retry:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+}
 
 /* ── Transitions ─────────────────────────────────────────────────────────── */
 .vp-fade-enter-active, .vp-fade-leave-active { transition: opacity 0.15s; }

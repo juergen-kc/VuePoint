@@ -12,7 +12,7 @@
  *   Browser Tab ◀──postMessage── SharedWorker ◀──WebSocket── API Server
  */
 
-import type { Annotation } from '@vuepoint/core'
+import type { Annotation, WebhookDeliveryLog } from '@vuepoint/core'
 import type { BridgeCommand, BridgeEvent, AppContext } from './types.js'
 
 // SharedWorker global scope — declare minimal typing since WebWorker lib
@@ -204,6 +204,7 @@ function connectWebSocket(): void {
           annotation?: Annotation
           id?: string
           question?: string
+          delivery?: WebhookDeliveryLog
         }
 
         // API server pushed an update (e.g., MCP agent acknowledged/resolved)
@@ -218,6 +219,11 @@ function connectWebSocket(): void {
             if (data.id) {
               annotations.delete(data.id)
               broadcast({ type: 'annotation_removed', id: data.id })
+            }
+            break
+          case 'webhook_delivery':
+            if (data.delivery) {
+              broadcast({ type: 'webhook_delivery', delivery: data.delivery })
             }
             break
           case 'question_received':

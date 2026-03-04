@@ -110,6 +110,17 @@ export interface WebhookConfig {
   events?: WebhookEvent[] // undefined = all events
 }
 
+export interface WebhookDeliveryLog {
+  id: string
+  event: WebhookEvent
+  url: string
+  statusCode: number | null
+  success: boolean
+  timestamp: string
+  retryCount: number
+  error?: string
+}
+
 // ─── Plugin Config ────────────────────────────────────────────────────────────
 
 export interface VuePointOptions {

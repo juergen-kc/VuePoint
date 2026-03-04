@@ -8,6 +8,7 @@ export type {
   WebhookEvent,
   WebhookPayload,
   WebhookConfig,
+  WebhookDeliveryLog,
   VuePointOptions,
   MarkdownOutputOptions,
 } from './types.js'

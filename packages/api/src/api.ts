@@ -21,6 +21,7 @@ import type { WebSocket } from 'ws'
 import type {
   Annotation,
   WebhookConfig,
+  WebhookDeliveryLog,
   WebhookEvent,
   WebhookPayload,
 } from '@vuepoint/core'
@@ -41,6 +42,10 @@ try {
 // In-memory annotation store (shared between REST API and MCP bridge)
 // In production this would be backed by SQLite or Redis for persistence
 const annotationStore = new Map<string, Annotation>()
+
+// Webhook delivery log (most recent deliveries — capped at 200 entries)
+const deliveryLog: WebhookDeliveryLog[] = []
+const MAX_DELIVERY_LOG = 200
 
 const sessionId = generateId()
 const appMeta = {
@@ -297,6 +302,36 @@ app.get('/api/v1/component', async (req, reply) => {
 
 app.get('/api/v1/webhooks', async () => webhooks.map((w) => ({ url: w.url, events: w.events })))
 
+app.get('/api/v1/webhooks/deliveries', async () => deliveryLog)
+
+app.post('/api/v1/webhooks/retry', async (req, reply) => {
+  const { id } = req.body as { id?: string }
+  if (!id) return reply.status(400).send({ error: 'delivery id required' })
+  const entry = deliveryLog.find((d) => d.id === id)
+  if (!entry) return reply.status(404).send({ error: 'Delivery not found' })
+
+  // Find the webhook config for this URL
+  const wh = webhooks.find((w) => w.url === entry.url)
+  const testPayload: WebhookPayload = {
+    event: entry.event,
+    timestamp: now(),
+    meta: { sessionId, ...appMeta },
+  }
+  const delivered = await deliverWebhook(entry.url, wh?.secret, testPayload)
+  const retryEntry: WebhookDeliveryLog = {
+    id: generateId(),
+    event: entry.event,
+    url: entry.url,
+    statusCode: delivered ? 200 : null,
+    success: delivered,
+    timestamp: now(),
+    retryCount: entry.retryCount + 1,
+    error: delivered ? undefined : 'Retry failed',
+  }
+  logDelivery(retryEntry)
+  return retryEntry
+})
+
 app.post('/api/v1/webhooks/test', async (req) => {
   const { url } = req.body as { url?: string }
   const target = url ?? webhooks[0]?.url
@@ -362,8 +397,8 @@ async function deliverWebhookWithRetry(
   attempts = 3
 ): Promise<void> {
   for (let i = 0; i < attempts; i++) {
-    const ok = await deliverWebhook(url, secret, payload)
-    if (ok) return
+    const result = await deliverWebhookTracked(url, secret, payload, i)
+    if (result.success) return
     if (i < attempts - 1) {
       await sleep([1000, 5000, 30000][i])
     }
@@ -371,11 +406,46 @@ async function deliverWebhookWithRetry(
   console.error(`[VuePoint] Webhook delivery failed after ${attempts} attempts: ${url}`)
 }
 
-async function deliverWebhook(
+interface DeliveryResult {
+  success: boolean
+  statusCode: number | null
+  error?: string
+}
+
+async function deliverWebhookTracked(
+  url: string,
+  secret: string | undefined,
+  payload: WebhookPayload,
+  retryCount: number
+): Promise<DeliveryResult> {
+  const result = await deliverWebhookRaw(url, secret, payload)
+  const entry: WebhookDeliveryLog = {
+    id: generateId(),
+    event: payload.event,
+    url,
+    statusCode: result.statusCode,
+    success: result.success,
+    timestamp: now(),
+    retryCount,
+    error: result.error,
+  }
+  logDelivery(entry)
+  return result
+}
+
+function logDelivery(entry: WebhookDeliveryLog): void {
+  deliveryLog.unshift(entry)
+  if (deliveryLog.length > MAX_DELIVERY_LOG) {
+    deliveryLog.length = MAX_DELIVERY_LOG
+  }
+  broadcastWs({ type: 'webhook_delivery', delivery: entry })
+}
+
+async function deliverWebhookRaw(
   url: string,
   secret: string | undefined,
   payload: WebhookPayload
-): Promise<boolean> {
+): Promise<DeliveryResult> {
   try {
     const body = JSON.stringify(payload)
     const headers: Record<string, string> = {
@@ -393,11 +463,20 @@ async function deliverWebhook(
     }
 
     const res = await fetch(url, { method: 'POST', headers, body })
-    return res.ok
+    return { success: res.ok, statusCode: res.status }
   } catch (err) {
     console.error(`[VuePoint] Webhook error:`, err)
-    return false
+    return { success: false, statusCode: null, error: String(err) }
   }
+}
+
+async function deliverWebhook(
+  url: string,
+  secret: string | undefined,
+  payload: WebhookPayload
+): Promise<boolean> {
+  const result = await deliverWebhookRaw(url, secret, payload)
+  return result.success
 }
 
 function sleep(ms: number): Promise<void> {
