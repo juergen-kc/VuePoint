@@ -155,3 +155,21 @@
   - `defineOptions({ name })` (Vue 3.3+) replaces the need for a separate `<script>` block when you only need to set the component name
   - `tsc --noEmit` with `.vue` shims doesn't catch template binding errors — consider vue-tsc for deeper SFC checking
 ---
+
+## 2026-03-04 - US-010
+- Implemented full AnnotationMarker.vue replacing the stub
+- Badge positioned absolutely at target element's top-right corner using `document.querySelector(annotation.selector)`
+- Scroll/resize tracking via event listeners with `requestAnimationFrame` debouncing
+- Re-finds target element if it disconnects from DOM (`el.isConnected` check)
+- Status-based colors: pending=blue, acknowledged=orange, resolved=green, dismissed=gray
+- Emits `select` event on click; wired to VuePointToolbar to open panel
+- Modernized from dual `<script>` block to `defineOptions({ name })` pattern
+- Updated VuePointToolbar.vue to handle `@select` event from markers
+- Typecheck passes clean
+- Files changed: AnnotationMarker.vue (full rewrite), VuePointToolbar.vue (added handleMarkerSelect + @select binding), prd.json, progress.md
+- **Learnings for future iterations:**
+  - `document.querySelector()` with a complex CSS selector can throw on invalid selectors — wrap in try/catch
+  - `el.isConnected` is the modern way to check if an element is still in the DOM (cheaper than `document.contains()`)
+  - Scroll events need `capture: true` to catch scroll events on nested scrollable containers, not just window scroll
+  - `requestAnimationFrame` debouncing prevents layout thrashing during rapid scroll events
+---

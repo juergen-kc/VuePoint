@@ -172,6 +172,11 @@ function highlightStyle(el: Element): Record<string, string> {
   }
 }
 
+function handleMarkerSelect(_id: string) {
+  isExpanded.value = true
+  mode.value = 'panel'
+}
+
 function getCurrentRoute(): string | undefined {
   // Read from vue-router if available on window (non-invasive)
   try {
@@ -201,6 +206,7 @@ function getCurrentRoute(): string | undefined {
       :key="ann.id"
       :annotation="ann"
       :index="idx + 1"
+      @select="handleMarkerSelect"
     />
 
     <!-- Feedback input (shown after clicking an element) -->
