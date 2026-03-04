@@ -1,0 +1,16 @@
+{
+  "name": "@vuepoint/bridge",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "echo 'bridge build configured in US-023'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vuepoint/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

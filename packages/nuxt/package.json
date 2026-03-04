@@ -1,0 +1,16 @@
+{
+  "name": "@jumpcloud/nuxt-vuepoint",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "echo 'nuxt module configured in US-029'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vuepoint/vue": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

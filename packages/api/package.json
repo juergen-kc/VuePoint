@@ -1,0 +1,27 @@
+{
+  "name": "@vuepoint/api",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "vuepoint-api": "./dist/api.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/api.js",
+      "types": "./dist/api.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "echo 'build configured in US-002'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vuepoint/core": "workspace:*",
+    "fastify": "^5.2.0",
+    "@fastify/cors": "^11.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

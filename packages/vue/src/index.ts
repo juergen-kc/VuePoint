@@ -1,0 +1,5 @@
+export { VuePoint, default } from './plugin.js'
+export { useAnnotationsStore, VUEPOINT_ANNOTATIONS_KEY } from './composables/useAnnotations.js'
+export type { AnnotationsStore } from './composables/useAnnotations.js'
+export { useVueInspector } from './composables/useVueInspector.js'
+export type { UseVueInspectorOptions } from './composables/useVueInspector.js'

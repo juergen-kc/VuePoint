@@ -1,0 +1,14 @@
+{
+  "name": "vuepoint-playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'playground configured in US-014'"
+  },
+  "dependencies": {
+    "@vuepoint/vue": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

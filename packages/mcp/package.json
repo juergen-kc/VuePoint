@@ -1,0 +1,26 @@
+{
+  "name": "@vuepoint/mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "vuepoint-mcp": "./dist/server.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/server.js",
+      "types": "./dist/server.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "echo 'build configured in US-002'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}
