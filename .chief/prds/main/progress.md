@@ -8,6 +8,7 @@
 - Stub components (AnnotationMarker.vue, AnnotationPanel.vue) created for VuePointToolbar imports
 - `vite` devDep needed in packages/vue for `import.meta.env` types
 - `@types/node` at root for `process.env` in plugin.ts production guard
+- Many US stories may already have working implementations from the original 11 source files — verify before writing new code
 - Build: `vite-plugin-dts` (with `rollupTypes: true`) for declaration bundling; `@vitejs/plugin-vue` for SFC compilation
 - Build: `packages/vue/tsconfig.build.json` with empty `paths: {}` prevents DTS from following `@vuepoint/core` source
 - Build: MCP and API packages are ESM-only (no CJS) since they're Node.js CLI entry points
@@ -49,4 +50,19 @@
   - `rollupTypes: true` in vite-plugin-dts produces a single bundled `.d.ts` file (uses @microsoft/api-extractor under the hood)
   - MCP and API packages use top-level `await` so must be ESM-only (no CJS output)
   - pnpm `-r` automatically handles build order based on workspace dependency topology
+---
+
+## 2026-03-04 - US-003
+- Verified existing `useVueInspector.ts` implementation meets all acceptance criteria
+- Component hierarchy walker: walks `__vueParentComponent` up DOM, then Vue instance tree via `parent`
+- Name resolution: `__name` → `name` → `filenameToName(__file)` priority chain
+- SFC path normalization: strips absolute prefix, returns `src/...` relative path
+- Vue built-ins filtered via `VUE_BUILTINS` set in `primevue-filter.ts`
+- Chain reversed to root-to-leaf order (`App → Page → Leaf`)
+- Typecheck passes clean
+- Files changed: prd.json (mark passes), progress.md
+- **Learnings for future iterations:**
+  - US-001 moved all 11 original source files intact — many stories may already have working implementations that just need verification + typecheck
+  - `useVueInspector` returns a composable factory pattern: call with options, get back bound functions — this is the project's preferred Vue composable style
+  - The `__vueParentComponent` property is only present in Vue 3 dev builds — production guard in plugin.ts ensures VuePoint is never active in prod
 ---
