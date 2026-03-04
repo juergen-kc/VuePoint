@@ -39,6 +39,8 @@ export interface Annotation {
   componentChain: VueComponentInfo[]
   /** Multiple elements captured via Shift+drag multi-select */
   elements?: AnnotationElement[]
+  /** Bounding rect for Alt+drag area selection annotations */
+  areaRect?: AnnotationRect
   /** Pinia store IDs the component accesses (opt-in) */
   piniaStores?: string[]
   /** Current Vue Router route path, if available */
@@ -65,7 +67,7 @@ export interface Annotation {
 export type AnnotationCreateInput = Pick<
   Annotation,
   'selector' | 'elementDescription' | 'componentChain' | 'feedback'
-> & Partial<Pick<Annotation, 'elements' | 'piniaStores' | 'route' | 'expected' | 'actual' | 'screenshot'>>
+> & Partial<Pick<Annotation, 'elements' | 'areaRect' | 'piniaStores' | 'route' | 'expected' | 'actual' | 'screenshot'>>
 
 // ─── Webhook Types ────────────────────────────────────────────────────────────
 

@@ -66,6 +66,20 @@ export function formatAnnotation(
     }
   }
 
+  // Area selection details (from Alt+drag)
+  if (ann.areaRect) {
+    const r = ann.areaRect
+    lines.push('')
+    lines.push(`**Area:** \`${Math.round(r.width)}×${Math.round(r.height)}\` at \`(${Math.round(r.x)}, ${Math.round(r.y)})\``)
+    if (ann.elements && ann.elements.length > 0) {
+      lines.push(`**Elements within area:** ${ann.elements.length}`)
+      for (let i = 0; i < ann.elements.length; i++) {
+        const el = ann.elements[i]
+        lines.push(`- **[${i + 1}]** \`${el.selector}\` — ${el.elementDescription}`)
+      }
+    }
+  }
+
   lines.push('')
 
   // Feedback

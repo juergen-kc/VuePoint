@@ -359,3 +359,22 @@
   - Shift+mousedown in capture phase must call `stopPropagation()` to prevent the regular click handler from also firing
   - The `readonly()` wrapper in useAnnotations deeply freezes arrays — DTS build shows type warnings when passing readonly annotations to functions expecting mutable `Annotation[]` (pre-existing issue, not blocking)
 ---
+
+## 2026-03-04 - US-016
+- Implemented Alt+drag area selection annotation in VuePointToolbar.vue
+- Added `areaRect?: AnnotationRect` to `Annotation` and `AnnotationCreateInput` types
+- Alt+drag draws an orange-tinted selection rectangle (distinct from Shift+drag blue multi-select)
+- On drag end, captures: bounding rect coordinates (x, y, width, height, scrollX, scrollY), and all leaf elements within bounds as `AnnotationElement[]`
+- Area annotations stored with `areaRect` field — presence of this field distinguishes them from element/multi-select annotations
+- Updated output.ts to format area annotation details: dimensions, position, and contained elements list
+- AnnotationMarker.vue renders area annotations as dashed border rectangles (vs numbered badges for element annotations), with a small numbered badge in the top-left corner
+- Dashed border color matches status (pending=blue, acknowledged=orange, resolved=green, dismissed=gray)
+- Feedback modal header shows "Area selection (WxH)" for area annotations
+- Typecheck passes clean; build succeeds
+- Files changed: types.ts (areaRect field), output.ts (area formatting), VuePointToolbar.vue (Alt+drag handlers, area state, template, CSS), AnnotationMarker.vue (area marker rendering + CSS), prd.json, progress.md
+- **Learnings for future iterations:**
+  - Area annotations store `scrollX`/`scrollY` so the dashed border marker can convert viewport coords to page-absolute coords for correct positioning
+  - Separate drag state pairs (`isDragging`/`dragRect` vs `isAreaDragging`/`areaDragRect`) keep multi-select and area selection independent
+  - The `selectionRectStyle` computed can serve both drag types by checking which is active — avoids duplicating the rect-to-CSS logic
+  - `handleDragStart` checks `e.altKey` before `e.shiftKey` isn't needed since they're checked with `||` — both keys trigger the handler, but the body distinguishes them
+---

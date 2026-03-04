@@ -15,7 +15,7 @@
 import { ref, computed, onMounted, onUnmounted, defineOptions } from 'vue'
 
 defineOptions({ name: 'VuePointToolbar' })
-import type { VuePointOptions, AnnotationElement } from '@vuepoint/core'
+import type { VuePointOptions, AnnotationElement, AnnotationRect } from '@vuepoint/core'
 import {
   generateSelector,
   describeElement,
@@ -82,9 +82,16 @@ const isDragging = ref(false)
 const dragRect = ref<DragRect | null>(null)
 const multiSelectElements = ref<Element[]>([])
 
+// Area selection drag state (Alt+drag)
+const isAreaDragging = ref(false)
+const areaDragRect = ref<DragRect | null>(null)
+const areaRect = ref<AnnotationRect | null>(null)
+const areaElements = ref<AnnotationElement[]>([])
+
 const selectionRectStyle = computed(() => {
-  if (!dragRect.value) return null
-  const { startX, startY, currentX, currentY } = dragRect.value
+  const rect = isDragging.value ? dragRect.value : areaDragRect.value
+  if (!rect) return null
+  const { startX, startY, currentX, currentY } = rect
   const left = Math.min(startX, currentX)
   const top = Math.min(startY, currentY)
   const width = Math.abs(currentX - startX)
@@ -138,6 +145,10 @@ function exitAnnotationMode() {
   isDragging.value = false
   dragRect.value = null
   multiSelectElements.value = []
+  isAreaDragging.value = false
+  areaDragRect.value = null
+  areaRect.value = null
+  areaElements.value = []
   feedbackText.value = ''
   expectedText.value = ''
   actualText.value = ''
@@ -145,30 +156,45 @@ function exitAnnotationMode() {
 }
 
 function handleDragStart(e: MouseEvent) {
-  if (!e.shiftKey || isVuePointElement(e.target as Element)) return
+  if (isVuePointElement(e.target as Element)) return
+  if (!e.shiftKey && !e.altKey) return
 
   e.preventDefault()
   e.stopPropagation()
 
-  isDragging.value = true
-  dragRect.value = { startX: e.clientX, startY: e.clientY, currentX: e.clientX, currentY: e.clientY }
+  const rect = { startX: e.clientX, startY: e.clientY, currentX: e.clientX, currentY: e.clientY }
+
+  if (e.altKey) {
+    // Alt+drag: area selection
+    isAreaDragging.value = true
+    areaDragRect.value = rect
+  } else {
+    // Shift+drag: multi-select
+    isDragging.value = true
+    dragRect.value = rect
+  }
 
   document.addEventListener('mousemove', handleDragMove)
   document.addEventListener('mouseup', handleDragEnd, true)
 }
 
 function handleDragMove(e: MouseEvent) {
-  if (!isDragging.value || !dragRect.value) return
-  dragRect.value = { ...dragRect.value, currentX: e.clientX, currentY: e.clientY }
+  if (isDragging.value && dragRect.value) {
+    dragRect.value = { ...dragRect.value, currentX: e.clientX, currentY: e.clientY }
+  } else if (isAreaDragging.value && areaDragRect.value) {
+    areaDragRect.value = { ...areaDragRect.value, currentX: e.clientX, currentY: e.clientY }
+  }
 }
 
 function handleDragEnd(e: MouseEvent) {
-  if (!isDragging.value || !dragRect.value) return
+  const isMultiSelect = isDragging.value && dragRect.value
+  const isArea = isAreaDragging.value && areaDragRect.value
+  if (!isMultiSelect && !isArea) return
 
   e.preventDefault()
   e.stopPropagation()
 
-  const rect = dragRect.value
+  const rect = isMultiSelect ? dragRect.value! : areaDragRect.value!
   const selLeft = Math.min(rect.startX, rect.currentX)
   const selTop = Math.min(rect.startY, rect.currentY)
   const selRight = Math.max(rect.startX, rect.currentX)
@@ -178,6 +204,8 @@ function handleDragEnd(e: MouseEvent) {
   if (selRight - selLeft < 10 || selBottom - selTop < 10) {
     isDragging.value = false
     dragRect.value = null
+    isAreaDragging.value = false
+    areaDragRect.value = null
     return
   }
 
@@ -190,23 +218,49 @@ function handleDragEnd(e: MouseEvent) {
     if (el.children.length > 0) return // prefer leaf elements
     const elRect = el.getBoundingClientRect()
     if (elRect.width === 0 || elRect.height === 0) return
-    // Check rectangle intersection
     if (elRect.right >= selLeft && elRect.left <= selRight &&
         elRect.bottom >= selTop && elRect.top <= selBottom) {
       captured.push(el)
     }
   })
 
-  isDragging.value = false
-  dragRect.value = null
+  if (isArea) {
+    // Alt+drag: area selection
+    isAreaDragging.value = false
+    areaDragRect.value = null
 
-  if (captured.length === 0) return
+    // Build the area rect data
+    areaRect.value = {
+      x: selLeft,
+      y: selTop,
+      width: selRight - selLeft,
+      height: selBottom - selTop,
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+    }
 
-  multiSelectElements.value = captured
-  // Use first element as the "primary" for the feedback form header
-  pendingElement.value = captured[0]
+    // Capture elements within the area as AnnotationElement[]
+    areaElements.value = captured.map((el) => ({
+      selector: generateSelector(el),
+      elementDescription: describeElement(el),
+      componentChain: getComponentChain(el),
+    }))
+
+    // Use first captured element or create a synthetic pendingElement
+    pendingElement.value = captured[0] || document.body
+  } else {
+    // Shift+drag: multi-select
+    isDragging.value = false
+    dragRect.value = null
+
+    if (captured.length === 0) return
+
+    multiSelectElements.value = captured
+    pendingElement.value = captured[0]
+  }
+
   mode.value = 'panel'
-  // Remove the click/mousemove listeners (we're now in feedback mode)
+  // Remove listeners — we're now in feedback mode
   document.removeEventListener('click', handleDocumentClick, true)
   document.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('mousedown', handleDragStart, true)
@@ -217,8 +271,8 @@ function handleDragEnd(e: MouseEvent) {
 }
 
 function handleDocumentClick(e: MouseEvent) {
-  // If Shift is held, let drag handler handle it
-  if (e.shiftKey) return
+  // If Shift or Alt is held, let drag handler handle it
+  if (e.shiftKey || e.altKey) return
 
   const target = e.target as Element
 
@@ -259,28 +313,41 @@ function submitAnnotation() {
   // Get current route if vue-router is present
   const route = getCurrentRoute()
 
-  // Build multi-element data if this is a drag-select
+  // Build annotation data based on selection type
   let elements: AnnotationElement[] | undefined
-  if (multiSelectElements.value.length > 1) {
+  let capturedAreaRect: AnnotationRect | undefined
+  let selector: string
+  let elementDescription: string
+
+  if (areaRect.value) {
+    // Alt+drag: area selection
+    capturedAreaRect = { ...areaRect.value }
+    elements = areaElements.value.length > 0 ? [...areaElements.value] : undefined
+    const w = Math.round(capturedAreaRect.width)
+    const h = Math.round(capturedAreaRect.height)
+    selector = `[area: ${w}×${h} at (${Math.round(capturedAreaRect.x)}, ${Math.round(capturedAreaRect.y)})]`
+    elementDescription = `Area selection (${w}×${h})`
+  } else if (multiSelectElements.value.length > 1) {
+    // Shift+drag: multi-select
     elements = multiSelectElements.value.map((mEl) => ({
       selector: generateSelector(mEl),
       elementDescription: describeElement(mEl),
       componentChain: getComponentChain(mEl),
     }))
+    selector = `[multi-select: ${elements.length} elements]`
+    elementDescription = `Multi-select (${elements.length} elements)`
+  } else {
+    // Single element click
+    selector = generateSelector(el)
+    elementDescription = describeElement(el)
   }
-
-  const selector = elements
-    ? `[multi-select: ${elements.length} elements]`
-    : generateSelector(el)
-  const elementDescription = elements
-    ? `Multi-select (${elements.length} elements)`
-    : describeElement(el)
 
   props.annotationsStore.create({
     selector,
     elementDescription,
     componentChain: chain,
     elements,
+    areaRect: capturedAreaRect,
     piniaStores: stores,
     route,
     feedback: feedbackText.value.trim(),
@@ -294,12 +361,16 @@ function submitAnnotation() {
   showExpectedActual.value = false
   pendingElement.value = null
   multiSelectElements.value = []
+  areaRect.value = null
+  areaElements.value = []
   mode.value = 'panel'
 }
 
 function cancelAnnotation() {
   pendingElement.value = null
   multiSelectElements.value = []
+  areaRect.value = null
+  areaElements.value = []
   feedbackText.value = ''
   expectedText.value = ''
   actualText.value = ''
@@ -352,10 +423,17 @@ function getCurrentRoute(): string | undefined {
 <template>
   <div data-vuepoint="true" class="vp-root" :data-vp-theme="theme">
 
-    <!-- Drag selection rectangle -->
+    <!-- Drag selection rectangle (Shift+drag multi-select) -->
     <div
       v-if="isDragging && selectionRectStyle"
       class="vp-selection-rect"
+      :style="selectionRectStyle"
+    />
+
+    <!-- Area selection rectangle (Alt+drag area select) -->
+    <div
+      v-if="isAreaDragging && selectionRectStyle"
+      class="vp-selection-rect vp-selection-rect--area"
       :style="selectionRectStyle"
     />
 
@@ -380,9 +458,11 @@ function getCurrentRoute(): string | undefined {
       <div v-if="pendingElement && mode === 'panel'" class="vp-feedback-modal">
         <div class="vp-feedback-header">
           <span class="vp-feedback-selector">
-            {{ multiSelectElements.length > 1
-              ? `Multi-select (${multiSelectElements.length} elements)`
-              : generateSelector(pendingElement) }}
+            {{ areaRect
+              ? `Area selection (${Math.round(areaRect.width)}×${Math.round(areaRect.height)})`
+              : multiSelectElements.length > 1
+                ? `Multi-select (${multiSelectElements.length} elements)`
+                : generateSelector(pendingElement) }}
           </span>
           <button class="vp-btn-ghost" @click="cancelAnnotation">✕</button>
         </div>
@@ -569,6 +649,12 @@ function getCurrentRoute(): string | undefined {
   background: rgba(79, 129, 189, 0.12);
   border-radius: 3px;
   z-index: 2147483646;
+}
+
+/* Area selection variant — distinct orange dashed border */
+.vp-selection-rect--area {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.10);
 }
 
 /* ── Hover highlight ─────────────────────────────────────────────────────── */

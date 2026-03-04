@@ -7,7 +7,7 @@
  * and emits click for panel selection.
  */
 
-import { ref, onMounted, onUnmounted, watch, defineOptions } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, defineOptions } from 'vue'
 import type { Annotation } from '@vuepoint/core'
 
 defineOptions({ name: 'AnnotationMarker' })
@@ -21,10 +21,16 @@ const emit = defineEmits<{
   select: [id: string]
 }>()
 
+// ─── Area annotation detection ──────────────────────────────────────────────
+
+const isAreaAnnotation = computed(() => !!props.annotation.areaRect)
+
 // ─── Position tracking ───────────────────────────────────────────────────────
 
 const top = ref(0)
 const left = ref(0)
+const areaWidth = ref(0)
+const areaHeight = ref(0)
 const visible = ref(false)
 
 let targetEl: Element | null = null
@@ -39,6 +45,18 @@ function findTarget(): Element | null {
 }
 
 function updatePosition() {
+  // Area annotations use stored rect, not a CSS selector
+  if (isAreaAnnotation.value && props.annotation.areaRect) {
+    const r = props.annotation.areaRect
+    // Convert from viewport coords to page coords using stored scroll offsets
+    top.value = r.y + r.scrollY
+    left.value = r.x + r.scrollX
+    areaWidth.value = r.width
+    areaHeight.value = r.height
+    visible.value = true
+    return
+  }
+
   if (!targetEl || !targetEl.isConnected) {
     targetEl = findTarget()
   }
@@ -107,8 +125,27 @@ function handleClick() {
 </script>
 
 <template>
+  <!-- Area annotation: dashed border rectangle -->
   <div
-    v-if="visible"
+    v-if="visible && isAreaAnnotation"
+    data-vuepoint="true"
+    class="vp-area-marker"
+    :class="statusClass"
+    :style="{
+      top: top + 'px',
+      left: left + 'px',
+      width: areaWidth + 'px',
+      height: areaHeight + 'px',
+    }"
+    :title="`#${index} — ${annotation.elementDescription}`"
+    @click.stop="handleClick"
+  >
+    <span class="vp-area-badge" :class="statusClass">{{ index }}</span>
+  </div>
+
+  <!-- Standard annotation: numbered badge -->
+  <div
+    v-else-if="visible"
     data-vuepoint="true"
     class="vp-marker"
     :class="statusClass"
@@ -161,4 +198,59 @@ function handleClick() {
 .vp-marker--dismissed {
   background: #6b7280;
 }
+
+/* ── Area annotation marker (dashed border rectangle) ──────────────────── */
+.vp-area-marker {
+  position: absolute;
+  pointer-events: auto;
+  border: 2px dashed #f59e0b;
+  border-radius: 4px;
+  z-index: 2147483645;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.vp-area-marker:hover {
+  border-width: 3px;
+}
+
+.vp-area-marker.vp-marker--pending {
+  border-color: #4f81bd;
+}
+
+.vp-area-marker.vp-marker--acknowledged {
+  border-color: #f59e0b;
+}
+
+.vp-area-marker.vp-marker--resolved {
+  border-color: #22c55e;
+}
+
+.vp-area-marker.vp-marker--dismissed {
+  border-color: #6b7280;
+}
+
+/* Small numbered badge in top-left corner of area marker */
+.vp-area-badge {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: white;
+  user-select: none;
+  box-shadow: 0 1px 4px var(--vp-shadow-fab, rgba(0, 0, 0, 0.3));
+}
+
+.vp-area-badge.vp-marker--pending { background: #4f81bd; }
+.vp-area-badge.vp-marker--acknowledged { background: #f59e0b; }
+.vp-area-badge.vp-marker--resolved { background: #22c55e; }
+.vp-area-badge.vp-marker--dismissed { background: #6b7280; }
 </style>
