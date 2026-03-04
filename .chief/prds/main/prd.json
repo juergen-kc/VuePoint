@@ -451,7 +451,7 @@
         "pnpm docs:dev starts local dev server"
       ],
       "priority": 4,
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-031",

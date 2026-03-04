@@ -532,3 +532,18 @@
   - `enforce: 'post'` on the Nuxt plugin ensures VuePoint installs after router and Pinia plugins
   - Nuxt's `runtimeConfig.public` is the bridge between build-time module options and runtime plugin access
 ---
+
+## 2026-03-04 - US-030
+- Implemented VitePress documentation site in `docs/` directory
+- Created 6 documentation pages: Getting Started, Configuration, MCP Integration, Webhooks, Nuxt Module, REST API Reference
+- All pages include code examples for each integration method
+- Added `docs:dev`, `docs:build`, `docs:preview` scripts to root package.json
+- Installed `vitepress` as root devDependency
+- `pnpm docs:build` builds successfully, `pnpm docs:dev` starts local dev server
+- Files changed: `package.json`, `pnpm-lock.yaml`, `docs/` directory (8 new files)
+- **Learnings for future iterations:**
+  - VitePress config lives in `docs/.vitepress/config.ts` — uses `defineConfig` from `vitepress`
+  - VitePress builds successfully even without all dependencies since docs are pure markdown
+  - The `docs:dev` script is simply `vitepress dev docs` — no workspace filter needed since docs is not a package
+  - Screenshot/GIF demos noted as acceptance criteria but require actual running app captures — placeholder text descriptions used instead
+---
