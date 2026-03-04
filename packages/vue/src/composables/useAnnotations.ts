@@ -24,6 +24,10 @@ export function useAnnotationsStore() {
     annotations.value.filter((a) => a.status === 'pending')
   )
 
+  const resolved = computed(() =>
+    annotations.value.filter((a) => a.status === 'resolved')
+  )
+
   const all = readonly(annotations)
 
   function getById(id: string): Annotation | undefined {
@@ -83,6 +87,7 @@ export function useAnnotationsStore() {
     // state
     annotations: all,
     pending,
+    resolved,
     // reads
     getById,
     // writes

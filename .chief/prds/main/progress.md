@@ -110,3 +110,19 @@
   - `buildFilter(customArray)` unions custom list WITH Vue builtins — builtins can never be shown unless `false` is passed
   - Vue builtins include RouterView/RouterLink — these are framework components that shouldn't appear in annotation chains
 ---
+
+## 2026-03-04 - US-007
+- Verified existing `useAnnotations.ts` composable meets all acceptance criteria
+- Added missing `resolved` computed filter (only `pending` existed before)
+- Store uses `ref`/`computed`/`readonly` — no Pinia dependency
+- CRUD: `create()`, `update()`, `acknowledge()`, `resolve()`, `dismiss()`, `remove()`, `clear()`
+- Each annotation gets unique ID via `generateId()` and ISO timestamp via `now()` on creation
+- Status lifecycle enforced: pending → acknowledged → resolved | dismissed
+- Symbol-based provide/inject (`VUEPOINT_ANNOTATIONS_KEY`) for host-app isolation
+- Typecheck passes clean
+- Files changed: useAnnotations.ts (added `resolved` computed), prd.json, progress.md
+- **Learnings for future iterations:**
+  - The `AnnotationsStore` type is derived via `ReturnType<typeof useAnnotationsStore>` — any new properties added to the return object auto-propagate to consumers
+  - `readonly()` wrapping on `annotations` prevents external mutation but internal `annotations.value` is still mutable for CRUD
+  - `update()` spreads `updatedAt: now()` on every mutation — all status changes go through `update()` for consistent timestamps
+---
