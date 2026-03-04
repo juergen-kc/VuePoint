@@ -1,0 +1,571 @@
+{
+  "project": "VuePoint — Visual Annotation \u0026 AI Agent Feedback Tool for Vue 3",
+  "description": "VuePoint is an internal JumpCloud tool that adds a visual annotation toolbar to live Vue 3 applications. Engineers, designers, and PMs can point at UI elements and generate structured, machine-readable feedback (CSS selectors, Vue component hierarchies, SFC file paths) that AI coding agents can act on directly. Instead of describing \"the blue button on the left,\" users hand an agent a precise selector and component chain, cutting feedback loops from minutes to seconds.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Scaffold monorepo directory structure",
+      "description": "As a developer, I need the project organized as a pnpm monorepo so that cross-package imports resolve and the project can be built, tested, and published.",
+      "acceptanceCriteria": [
+        "Directory structure created: packages/core/, packages/vue/, packages/bridge/, packages/mcp/, packages/api/, packages/nuxt/, playground/",
+        "Existing 11 source files moved to their correct package locations per architecture spec",
+        "Root package.json with pnpm workspaces configuration",
+        "Per-package package.json with correct name, exports, dependencies, and peerDependencies",
+        "Root tsconfig.json and per-package tsconfig.json with project references",
+        "pnpm install succeeds without errors",
+        "Cross-package imports (@vuepoint/core from @vuepoint/vue) resolve correctly in TypeScript"
+      ],
+      "priority": 1,
+      "passes": false,
+      "inProgress": true
+    },
+    {
+      "id": "US-002",
+      "title": "Build system with Vite",
+      "description": "As a developer, I need each package to build via Vite so that the project produces consumable ESM + CJS output.",
+      "acceptanceCriteria": [
+        "vite.config.ts in each publishable package (core, vue, mcp, api)",
+        "pnpm build from root builds all packages in dependency order",
+        "@vuepoint/core outputs ESM + CJS with TypeScript declarations",
+        "@vuepoint/vue outputs ESM + CJS with TypeScript declarations and .vue SFC compilation",
+        "@vuepoint/mcp outputs a runnable Node.js entry point",
+        "@vuepoint/api outputs a runnable Node.js entry point",
+        "pnpm typecheck passes across all packages"
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "US-003",
+      "title": "Vue component hierarchy resolution",
+      "description": "As a developer using an AI agent, I want annotations to include the full Vue component chain and SFC file path so the agent can navigate directly to the source file.",
+      "acceptanceCriteria": [
+        "useVueInspector.ts walks __vueParentComponent from clicked element to app root",
+        "Component names resolved from __name, name, or __file fallback",
+        "SFC file path extracted from component.type.__file and normalized (strips absolute prefix)",
+        "Vue built-in components (Transition, KeepAlive, etc.) filtered out",
+        "Chain returned in root-to-leaf order: \u003cApp\u003e -\u003e \u003cPageView\u003e -\u003e \u003cTargetComponent\u003e",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "US-004",
+      "title": "CSS selector generation",
+      "description": "As a developer using an AI agent, I want each annotation to include a unique CSS selector so the agent can grep for or target the exact element.",
+      "acceptanceCriteria": [
+        "generateSelector() produces a unique CSS path from root to target element",
+        "Prioritizes: #id \u003e [data-testid] \u003e tag + classes \u003e :nth-child()",
+        "Max depth of 8 to keep selectors readable",
+        "describeElement() returns a human-readable summary (tag, classes, text content)",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "US-005",
+      "title": "Markdown output formatter",
+      "description": "As a user, I want annotations formatted as structured Markdown so I can paste them into any AI agent chat.",
+      "acceptanceCriteria": [
+        "formatAnnotation() outputs Markdown with: Element, Selector, Component chain, SFC Path, Pinia Stores, Feedback, Expected, Actual, Route",
+        "formatAnnotationBatch() formats multiple annotations with numbered headers",
+        "Optional fields (Expected, Actual, Pinia Stores) omitted when empty",
+        "Output is greppable and machine-parseable",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "US-006",
+      "title": "PrimeVue component filtering",
+      "description": "As a developer using PrimeVue, I want library-internal components filtered from the hierarchy so annotations show only my own components.",
+      "acceptanceCriteria": [
+        "Default filter list covers 35+ PrimeVue internal components (PButton, PDialog, etc.)",
+        "Vue built-in components (Transition, KeepAlive, Suspense, etc.) always filtered",
+        "buildFilter() accepts: false (no filtering), string[] (custom list), or undefined (defaults)",
+        "Filter is configurable via VuePointOptions.filterComponents",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "US-007",
+      "title": "Annotation state management",
+      "description": "As a developer, I need a reactive annotation store so the toolbar, markers, and integrations all share the same state.",
+      "acceptanceCriteria": [
+        "useAnnotations() composable provides reactive annotations array and pending/resolved computed filters",
+        "CRUD operations: create, update, acknowledge, resolve, dismiss, remove, clear",
+        "Each annotation gets a unique ID and timestamp on creation",
+        "Status lifecycle: pending -\u003e acknowledged -\u003e resolved | dismissed",
+        "Store is framework-agnostic (plain Vue ref/computed, not Pinia)",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "US-008",
+      "title": "Vue plugin entry with production guard",
+      "description": "As a developer, I want to install VuePoint with app.use(VuePoint) and have it auto-disable in production.",
+      "acceptanceCriteria": [
+        "app.use(VuePoint) installs the toolbar with zero config",
+        "app.use(VuePoint, { ...options }) accepts full VuePointOptions",
+        "Production guard: disabled when NODE_ENV === 'production' or import.meta.env.PROD === true",
+        "Toolbar rendered in an isolated Vue app instance (separate from host app — does not appear in __vueParentComponent chain)",
+        "Keyboard shortcut parsed and registered (default: Ctrl+Shift+A)",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "US-009",
+      "title": "Core toolbar — click-to-annotate flow",
+      "description": "As a user, I want to click any element in my app and create an annotation with structured feedback.",
+      "acceptanceCriteria": [
+        "FAB button (collapsed by default) expands toolbar on click",
+        "Activating \"annotate mode\" changes cursor and highlights elements on hover",
+        "Clicking an element captures: selector, component chain, SFC path, bounding rect",
+        "Feedback modal appears with text input for user's description",
+        "Submitting creates an annotation in the store",
+        "Annotation marker (numbered badge) placed at the annotated element's position",
+        "\"Copy All\" button generates Markdown output to clipboard",
+        "Keyboard shortcut toggles toolbar visibility",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "US-010",
+      "title": "Create AnnotationMarker component",
+      "description": "As a user, I want to see numbered badges on annotated elements so I can visually track which elements have feedback.",
+      "acceptanceCriteria": [
+        "AnnotationMarker.vue renders a positioned numbered badge at each annotation's bounding rect",
+        "Badge updates position on scroll and resize",
+        "Clicking a badge selects that annotation in the panel",
+        "Badge color reflects annotation status (pending = blue, acknowledged = orange, resolved = green)",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "US-011",
+      "title": "Create AnnotationPanel component",
+      "description": "As a user, I want a panel listing all annotations so I can review, edit, and manage them.",
+      "acceptanceCriteria": [
+        "AnnotationPanel.vue renders a scrollable list of all annotations",
+        "Each item shows: number, element description, feedback text, status badge",
+        "Delete button removes an annotation",
+        "Clicking an item scrolls the page to the annotated element",
+        "Empty state message when no annotations exist",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "US-012",
+      "title": "Expected/Actual fields in feedback form",
+      "description": "As a user reporting a bug, I want to specify what I expected and what actually happened, so the AI agent has clear context.",
+      "acceptanceCriteria": [
+        "Feedback modal includes optional \"Expected behavior\" and \"Actual behavior\" text fields",
+        "Fields are collapsible (hidden by default, expand on click)",
+        "Values saved to annotation's expected and actual fields",
+        "Included in Markdown output when present",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "US-013",
+      "title": "Dark/light mode toggle",
+      "description": "As a user, I want the toolbar to support dark and light themes so it matches my app's appearance.",
+      "acceptanceCriteria": [
+        "Toggle switch in toolbar header",
+        "All toolbar components (FAB, panel, markers, modal) respect the theme",
+        "Default theme auto-detected from prefers-color-scheme media query",
+        "Theme preference persisted in localStorage",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "US-014",
+      "title": "Playground development app",
+      "description": "As a developer, I need a test app to develop and demo VuePoint in a realistic Vue 3 + PrimeVue environment.",
+      "acceptanceCriteria": [
+        "playground/ directory with a Vue 3 + Vite app",
+        "PrimeVue installed and configured with sample components (DataTable, Button, Dialog, etc.)",
+        "VuePoint installed via workspace link (@vuepoint/vue)",
+        "Pinia store with sample data (e.g., a users list)",
+        "Multiple routes to test route context capture",
+        "pnpm dev starts the playground with hot reload",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "US-015",
+      "title": "Multi-select annotation (drag)",
+      "description": "As a user, I want to drag-select multiple elements at once so I can annotate a group of related elements in one action.",
+      "acceptanceCriteria": [
+        "Hold Shift + drag to draw a selection rectangle",
+        "All elements intersecting the rectangle are captured as a single multi-element annotation",
+        "Each element's selector and component info included in the annotation",
+        "Visual feedback during drag (selection rectangle overlay)",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "US-016",
+      "title": "Area selection annotation",
+      "description": "As a user, I want to select an arbitrary rectangular area of the page to annotate layout or spacing issues that don't map to a single element.",
+      "acceptanceCriteria": [
+        "Alt + drag to draw an area selection",
+        "Area annotation captures: bounding rect coordinates, screenshot of area (Phase 2), elements within bounds",
+        "Distinct visual marker for area annotations (dashed border vs. badge)",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "US-017",
+      "title": "Text selection annotation",
+      "description": "As a user, I want to select text on the page and annotate it to flag copy issues, typos, or content feedback.",
+      "acceptanceCriteria": [
+        "Select text, then click \"Annotate Selection\" in toolbar (or right-click context)",
+        "Annotation captures: selected text, containing element selector, component chain",
+        "Text highlight marker persists on the page",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "US-018",
+      "title": "Animation pause",
+      "description": "As a user, I want to pause all CSS animations and transitions so I can annotate elements that are in motion.",
+      "acceptanceCriteria": [
+        "\"Pause Animations\" toggle in toolbar",
+        "Injects * { animation-play-state: paused !important; transition: none !important; } globally",
+        "Removing toggle restores original animation state",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "US-019",
+      "title": "Inline editing in annotation panel",
+      "description": "As a user, I want to edit annotation feedback directly in the panel without reopening a modal.",
+      "acceptanceCriteria": [
+        "Double-click feedback text in panel to switch to inline edit mode",
+        "Save on blur or Enter; cancel on Escape",
+        "Updated text reflected in Markdown output immediately",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "US-020",
+      "title": "Agent question display in toolbar",
+      "description": "As a user, I want to see and answer questions from AI agents directly in the toolbar when an agent calls vuepoint_ask.",
+      "acceptanceCriteria": [
+        "When MCP agent calls vuepoint_ask, question appears as a notification badge on the toolbar",
+        "Opening toolbar shows the question with a text reply field",
+        "User's reply sent back through the bridge to the MCP server",
+        "Question/answer history visible in annotation panel",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "US-021",
+      "title": "Per-component Pinia store resolution",
+      "description": "As a developer, I want annotations to show which Pinia stores a specific component accesses, not just all stores in the app.",
+      "acceptanceCriteria": [
+        "useVueInspector resolves which stores a component's setup function references",
+        "Store IDs listed in annotation output under \"Pinia Stores\"",
+        "Opt-in: only active when VuePointOptions.pinia.enabled === true and Pinia instance provided",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "US-022",
+      "title": "Screenshot capture per annotation",
+      "description": "As a user, I want a screenshot of the annotated element automatically attached so async reviewers can see the visual context.",
+      "acceptanceCriteria": [
+        "Screenshot captured via html2canvas or Screen Capture API when annotation is created",
+        "Stored as Base64 PNG in annotation's screenshot field",
+        "Thumbnail visible in annotation panel",
+        "Included in REST API and webhook payloads",
+        "Opt-in configuration (not captured by default to avoid performance overhead)",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "US-023",
+      "title": "SharedWorker bridge — browser to Node state sync",
+      "description": "As a developer, I need a SharedWorker that holds annotation state and exposes it via HTTP/WebSocket so the MCP server and REST API can read and write annotations from the browser.",
+      "acceptanceCriteria": [
+        "packages/bridge/src/worker.ts implements a SharedWorker",
+        "Worker receives annotation events from VuePointToolbar.vue via postMessage",
+        "Worker exposes HTTP endpoints on localhost:3741 mirroring the REST API shape (GET/POST/PATCH/DELETE annotations)",
+        "Worker exposes WebSocket on ws://localhost:3741/ws for real-time push",
+        "Multiple browser tabs share the same worker instance and annotation state",
+        "MCP server (server.ts) can successfully fetch() annotations from the worker",
+        "REST API (api.ts) can successfully read/write annotations via the worker",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "US-024",
+      "title": "Context sync — browser pushes route/component to bridge",
+      "description": "As an AI agent, I want vuepoint_get_app_context to return the current route, page component, and active Pinia stores so I can understand what the user is looking at.",
+      "acceptanceCriteria": [
+        "plugin.ts sends context updates to the SharedWorker on route change",
+        "Context includes: current route path, route name, matched page component name, active Pinia store IDs",
+        "MCP tool vuepoint_get_app_context returns this context via the bridge",
+        "REST endpoint GET /api/v1/context returns this context",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "US-025",
+      "title": "MCP server — all 8 tools functional end-to-end",
+      "description": "As an AI agent (Claude Code, Cursor), I want to use MCP tools to read, acknowledge, and resolve annotations in real time.",
+      "acceptanceCriteria": [
+        "npx vuepoint mcp starts the stdio MCP server",
+        "vuepoint_get_annotations returns all pending annotations from the browser",
+        "vuepoint_get_annotation returns a single annotation by ID",
+        "vuepoint_acknowledge marks an annotation as in-progress (toolbar badge updates)",
+        "vuepoint_resolve marks as resolved with summary (annotation removed from pending, webhook fired)",
+        "vuepoint_dismiss archives with reason",
+        "vuepoint_ask sends question to toolbar; user's reply returned to agent",
+        "vuepoint_get_component_info queries live DOM via bridge and returns component details",
+        "vuepoint_get_app_context returns current route, page, and stores",
+        "All tools validated with Zod schemas",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "US-026",
+      "title": "REST API — full CRUD + export + webhooks",
+      "description": "As a developer or external tool, I want HTTP endpoints to manage annotations programmatically.",
+      "acceptanceCriteria": [
+        "Fastify server starts on configurable port (default 3742)",
+        "GET /api/v1/annotations lists annotations with ?status= filter",
+        "GET /api/v1/annotations/:id returns single annotation",
+        "POST /api/v1/annotations creates annotation programmatically",
+        "PATCH /api/v1/annotations/:id updates status/notes",
+        "DELETE /api/v1/annotations/:id hard deletes",
+        "GET /api/v1/annotations/export exports as Markdown, JSON, or CSV",
+        "GET /api/v1/component queries component by selector or name",
+        "GET /api/v1/context returns current app context",
+        "GET /api/v1/health returns health check",
+        "Optional bearer token auth",
+        "Configurable CORS",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "US-027",
+      "title": "Webhook engine with HMAC signing and retry",
+      "description": "As a team, I want annotations pushed to external URLs (Slack, Linear, etc.) automatically when events occur.",
+      "acceptanceCriteria": [
+        "Webhooks configurable via VuePointOptions.webhooks[]",
+        "Events supported: annotation.created, annotation.updated, annotation.acknowledged, annotation.resolved, annotation.dismissed, annotation.batch_copied, session.started, session.ended",
+        "Payload signed with HMAC-SHA256; signature in X-VuePoint-Signature-256 header",
+        "Retry: 3 attempts with exponential backoff (1s -\u003e 5s -\u003e 30s)",
+        "POST /api/v1/webhooks/test triggers test delivery",
+        "GET /api/v1/webhooks lists configured webhooks",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "US-028",
+      "title": "Webhook delivery log UI",
+      "description": "As a user, I want to see webhook delivery status in the toolbar settings so I can debug failed deliveries.",
+      "acceptanceCriteria": [
+        "Settings panel in toolbar shows webhook delivery history",
+        "Each entry shows: event type, URL, status code, timestamp, retry count",
+        "Failed deliveries highlighted in red",
+        "\"Retry\" button for failed deliveries",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "US-029",
+      "title": "Nuxt 3 module",
+      "description": "As a Nuxt 3 developer, I want a dedicated module so VuePoint integrates with Nuxt's auto-import and route system.",
+      "acceptanceCriteria": [
+        "@jumpcloud/nuxt-vuepoint package in packages/nuxt/",
+        "Install via modules: ['@jumpcloud/nuxt-vuepoint'] in nuxt.config.ts",
+        "Auto-registers VuePoint plugin with Nuxt's Vue app",
+        "Captures Nuxt route metadata (layout, middleware) in context",
+        "Respects vuepoint: { enabled } config in nuxt.config.ts",
+        "Production guard works with Nuxt's build system",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false
+    },
+    {
+      "id": "US-030",
+      "title": "Documentation site",
+      "description": "As a JumpCloud team member, I need a documentation site so I can learn how to install and use VuePoint.",
+      "acceptanceCriteria": [
+        "VitePress site in docs/ directory",
+        "Pages: Getting Started, Configuration, MCP Integration, REST API Reference, Webhooks, Nuxt Module",
+        "Code examples for each integration method",
+        "Screenshot/GIF demos of annotation workflow",
+        "pnpm docs:dev starts local dev server"
+      ],
+      "priority": 4,
+      "passes": false
+    },
+    {
+      "id": "US-031",
+      "title": "Non-technical install guide",
+      "description": "As a PM or designer, I need a simple guide so I can start annotating without developer help.",
+      "acceptanceCriteria": [
+        "Dedicated \"For PMs \u0026 Designers\" page in docs",
+        "Step-by-step: open staging URL, activate toolbar, annotate, copy output, paste to agent",
+        "No terminal or code editor steps required",
+        "Screenshots for each step",
+        "FAQ section addressing common questions"
+      ],
+      "priority": 4,
+      "passes": false
+    },
+    {
+      "id": "US-032",
+      "title": "CI pipeline",
+      "description": "As a developer, I need CI to run typecheck, lint, and tests on every PR.",
+      "acceptanceCriteria": [
+        "GitHub Actions workflow in .github/workflows/ci.yml",
+        "Steps: install, typecheck, lint (ESLint), test (Vitest)",
+        "Runs on push to main and on all PRs",
+        "Matrix: Node 18, 20",
+        "Status checks required for merge"
+      ],
+      "priority": 4,
+      "passes": false
+    },
+    {
+      "id": "US-033",
+      "title": "Unit tests for core packages",
+      "description": "As a developer, I need unit tests for selector generation, output formatting, and annotation state management.",
+      "acceptanceCriteria": [
+        "Vitest configured at monorepo root",
+        "Tests for selector.ts: unique selector generation, max depth, ID priority, special characters",
+        "Tests for output.ts: single annotation format, batch format, optional field omission",
+        "Tests for primevue-filter.ts: default list, custom list, disabled filtering",
+        "Tests for useAnnotations.ts: CRUD operations, status lifecycle, computed filters",
+        "All tests pass with pnpm test"
+      ],
+      "priority": 4,
+      "passes": false
+    },
+    {
+      "id": "US-034",
+      "title": "Browser extension (no-install)",
+      "description": "As a PM, I want a browser extension that injects VuePoint into any Vue 3 staging URL so I don't need developer help to install the package.",
+      "acceptanceCriteria": [
+        "Chrome extension that detects Vue 3 apps via __vue_app__ on #app",
+        "Injects VuePoint toolbar into the page",
+        "Extension popup allows configuring MCP port and auth token",
+        "Works on any Vue 3 app without code changes",
+        "Published to JumpCloud internal Chrome Web Store"
+      ],
+      "priority": 5,
+      "passes": false
+    },
+    {
+      "id": "US-035",
+      "title": "Slack webhook template",
+      "description": "As a team, I want annotations automatically posted to a Slack channel with rich formatting.",
+      "acceptanceCriteria": [
+        "Pre-built webhook payload transformer for Slack Block Kit format",
+        "Annotation appears as Slack message with: element description, selector, component chain, feedback, status badge",
+        "Screenshot thumbnail attached when available",
+        "\"View in VuePoint\" link (when web dashboard exists)",
+        "Configuration example in docs"
+      ],
+      "priority": 5,
+      "passes": false
+    },
+    {
+      "id": "US-036",
+      "title": "Linear/Jira webhook templates",
+      "description": "As a team, I want annotations to create issues in Linear or Jira automatically.",
+      "acceptanceCriteria": [
+        "Pre-built payload transformers for Linear and Jira webhook formats",
+        "Issue title derived from annotation feedback (first sentence)",
+        "Issue body includes full structured annotation output",
+        "Labels/tags auto-applied (e.g., \"vuepoint\", \"ui-feedback\")",
+        "Configuration examples in docs"
+      ],
+      "priority": 5,
+      "passes": false
+    },
+    {
+      "id": "US-037",
+      "title": "Team annotation dashboard",
+      "description": "As an engineering manager, I want a shared live dashboard showing all team annotations in real time.",
+      "acceptanceCriteria": [
+        "Web dashboard (separate Vue app or VitePress page)",
+        "Real-time updates via WebSocket connection to bridge",
+        "Shows all annotations across team members with filters (status, user, route)",
+        "Annotation history with timestamps and resolution summaries",
+        "Exportable as CSV or Markdown"
+      ],
+      "priority": 5,
+      "passes": false
+    },
+    {
+      "id": "US-038",
+      "title": "Vite plugin (zero-config)",
+      "description": "As a developer, I want a Vite plugin that auto-injects VuePoint without modifying main.ts.",
+      "acceptanceCriteria": [
+        "vite-plugin-vuepoint package",
+        "Add to vite.config.ts plugins array — no main.ts changes needed",
+        "Auto-detects Vue app entry and injects app.use(VuePoint)",
+        "Respects mode for production guard",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false
+    }
+  ]
+}
