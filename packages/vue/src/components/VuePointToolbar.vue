@@ -15,7 +15,7 @@
 import { ref, computed, onMounted, onUnmounted, defineOptions } from 'vue'
 
 defineOptions({ name: 'VuePointToolbar' })
-import type { VuePointOptions } from '@vuepoint/core'
+import type { VuePointOptions, AnnotationElement } from '@vuepoint/core'
 import {
   generateSelector,
   describeElement,
@@ -69,6 +69,29 @@ const { getComponentChain, getComponentStores } = useVueInspector({
   filterSet: props.options.filterSet,
 })
 
+// ─── Multi-select drag state ──────────────────────────────────────────────────
+
+interface DragRect {
+  startX: number
+  startY: number
+  currentX: number
+  currentY: number
+}
+
+const isDragging = ref(false)
+const dragRect = ref<DragRect | null>(null)
+const multiSelectElements = ref<Element[]>([])
+
+const selectionRectStyle = computed(() => {
+  if (!dragRect.value) return null
+  const { startX, startY, currentX, currentY } = dragRect.value
+  const left = Math.min(startX, currentX)
+  const top = Math.min(startY, currentY)
+  const width = Math.abs(currentX - startX)
+  const height = Math.abs(currentY - startY)
+  return { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` }
+})
+
 const annotations = computed(() => props.annotationsStore.annotations.value)
 const pendingCount = computed(() => props.annotationsStore.pending.value.length)
 
@@ -98,6 +121,7 @@ function enterAnnotationMode() {
   isExpanded.value = true
   document.addEventListener('click', handleDocumentClick, true)
   document.addEventListener('mousemove', handleMouseMove, { passive: true })
+  document.addEventListener('mousedown', handleDragStart, true)
   document.body.style.cursor = 'crosshair'
 }
 
@@ -105,16 +129,97 @@ function exitAnnotationMode() {
   mode.value = mode.value === 'annotating' ? 'idle' : mode.value
   document.removeEventListener('click', handleDocumentClick, true)
   document.removeEventListener('mousemove', handleMouseMove)
+  document.removeEventListener('mousedown', handleDragStart, true)
+  document.removeEventListener('mousemove', handleDragMove)
+  document.removeEventListener('mouseup', handleDragEnd, true)
   document.body.style.cursor = ''
   hoveredElement.value = null
   pendingElement.value = null
+  isDragging.value = false
+  dragRect.value = null
+  multiSelectElements.value = []
   feedbackText.value = ''
   expectedText.value = ''
   actualText.value = ''
   showExpectedActual.value = false
 }
 
+function handleDragStart(e: MouseEvent) {
+  if (!e.shiftKey || isVuePointElement(e.target as Element)) return
+
+  e.preventDefault()
+  e.stopPropagation()
+
+  isDragging.value = true
+  dragRect.value = { startX: e.clientX, startY: e.clientY, currentX: e.clientX, currentY: e.clientY }
+
+  document.addEventListener('mousemove', handleDragMove)
+  document.addEventListener('mouseup', handleDragEnd, true)
+}
+
+function handleDragMove(e: MouseEvent) {
+  if (!isDragging.value || !dragRect.value) return
+  dragRect.value = { ...dragRect.value, currentX: e.clientX, currentY: e.clientY }
+}
+
+function handleDragEnd(e: MouseEvent) {
+  if (!isDragging.value || !dragRect.value) return
+
+  e.preventDefault()
+  e.stopPropagation()
+
+  const rect = dragRect.value
+  const selLeft = Math.min(rect.startX, rect.currentX)
+  const selTop = Math.min(rect.startY, rect.currentY)
+  const selRight = Math.max(rect.startX, rect.currentX)
+  const selBottom = Math.max(rect.startY, rect.currentY)
+
+  // Minimum drag size (10px) to avoid accidental drags
+  if (selRight - selLeft < 10 || selBottom - selTop < 10) {
+    isDragging.value = false
+    dragRect.value = null
+    return
+  }
+
+  // Find all leaf elements intersecting the selection rectangle
+  const candidates = document.querySelectorAll('body *')
+  const captured: Element[] = []
+
+  candidates.forEach((el) => {
+    if (isVuePointElement(el)) return
+    if (el.children.length > 0) return // prefer leaf elements
+    const elRect = el.getBoundingClientRect()
+    if (elRect.width === 0 || elRect.height === 0) return
+    // Check rectangle intersection
+    if (elRect.right >= selLeft && elRect.left <= selRight &&
+        elRect.bottom >= selTop && elRect.top <= selBottom) {
+      captured.push(el)
+    }
+  })
+
+  isDragging.value = false
+  dragRect.value = null
+
+  if (captured.length === 0) return
+
+  multiSelectElements.value = captured
+  // Use first element as the "primary" for the feedback form header
+  pendingElement.value = captured[0]
+  mode.value = 'panel'
+  // Remove the click/mousemove listeners (we're now in feedback mode)
+  document.removeEventListener('click', handleDocumentClick, true)
+  document.removeEventListener('mousemove', handleMouseMove)
+  document.removeEventListener('mousedown', handleDragStart, true)
+  document.removeEventListener('mousemove', handleDragMove)
+  document.removeEventListener('mouseup', handleDragEnd, true)
+  document.body.style.cursor = ''
+  hoveredElement.value = null
+}
+
 function handleDocumentClick(e: MouseEvent) {
+  // If Shift is held, let drag handler handle it
+  if (e.shiftKey) return
+
   const target = e.target as Element
 
   // Ignore clicks inside VuePoint's own DOM
@@ -123,6 +228,7 @@ function handleDocumentClick(e: MouseEvent) {
   e.preventDefault()
   e.stopPropagation()
 
+  multiSelectElements.value = []
   pendingElement.value = target
   mode.value = 'panel'
   exitAnnotationMode()
@@ -153,10 +259,28 @@ function submitAnnotation() {
   // Get current route if vue-router is present
   const route = getCurrentRoute()
 
+  // Build multi-element data if this is a drag-select
+  let elements: AnnotationElement[] | undefined
+  if (multiSelectElements.value.length > 1) {
+    elements = multiSelectElements.value.map((mEl) => ({
+      selector: generateSelector(mEl),
+      elementDescription: describeElement(mEl),
+      componentChain: getComponentChain(mEl),
+    }))
+  }
+
+  const selector = elements
+    ? `[multi-select: ${elements.length} elements]`
+    : generateSelector(el)
+  const elementDescription = elements
+    ? `Multi-select (${elements.length} elements)`
+    : describeElement(el)
+
   props.annotationsStore.create({
-    selector: generateSelector(el),
-    elementDescription: describeElement(el),
+    selector,
+    elementDescription,
     componentChain: chain,
+    elements,
     piniaStores: stores,
     route,
     feedback: feedbackText.value.trim(),
@@ -169,11 +293,13 @@ function submitAnnotation() {
   actualText.value = ''
   showExpectedActual.value = false
   pendingElement.value = null
+  multiSelectElements.value = []
   mode.value = 'panel'
 }
 
 function cancelAnnotation() {
   pendingElement.value = null
+  multiSelectElements.value = []
   feedbackText.value = ''
   expectedText.value = ''
   actualText.value = ''
@@ -226,9 +352,16 @@ function getCurrentRoute(): string | undefined {
 <template>
   <div data-vuepoint="true" class="vp-root" :data-vp-theme="theme">
 
+    <!-- Drag selection rectangle -->
+    <div
+      v-if="isDragging && selectionRectStyle"
+      class="vp-selection-rect"
+      :style="selectionRectStyle"
+    />
+
     <!-- Hover highlight -->
     <div
-      v-if="mode === 'annotating' && hoveredElement"
+      v-if="mode === 'annotating' && !isDragging && hoveredElement"
       class="vp-highlight"
       :style="highlightStyle(hoveredElement)"
     />
@@ -246,7 +379,11 @@ function getCurrentRoute(): string | undefined {
     <Transition name="vp-fade">
       <div v-if="pendingElement && mode === 'panel'" class="vp-feedback-modal">
         <div class="vp-feedback-header">
-          <span class="vp-feedback-selector">{{ generateSelector(pendingElement) }}</span>
+          <span class="vp-feedback-selector">
+            {{ multiSelectElements.length > 1
+              ? `Multi-select (${multiSelectElements.length} elements)`
+              : generateSelector(pendingElement) }}
+          </span>
           <button class="vp-btn-ghost" @click="cancelAnnotation">✕</button>
         </div>
         <textarea
@@ -422,6 +559,16 @@ function getCurrentRoute(): string | undefined {
 .vp-root * {
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ── Drag selection rectangle ────────────────────────────────────────────── */
+.vp-selection-rect {
+  position: fixed;
+  pointer-events: none;
+  border: 2px dashed var(--vp-accent);
+  background: rgba(79, 129, 189, 0.12);
+  border-radius: 3px;
+  z-index: 2147483646;
 }
 
 /* ── Hover highlight ─────────────────────────────────────────────────────── */

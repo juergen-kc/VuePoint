@@ -22,6 +22,13 @@ export interface AnnotationRect {
   scrollY: number
 }
 
+/** Info for one element in a multi-element annotation */
+export interface AnnotationElement {
+  selector: string
+  elementDescription: string
+  componentChain: VueComponentInfo[]
+}
+
 export interface Annotation {
   id: string
   /** Unique CSS selector path to the annotated element */
@@ -30,6 +37,8 @@ export interface Annotation {
   elementDescription: string
   /** Ordered component chain: App → Page → ... → LeafComponent */
   componentChain: VueComponentInfo[]
+  /** Multiple elements captured via Shift+drag multi-select */
+  elements?: AnnotationElement[]
   /** Pinia store IDs the component accesses (opt-in) */
   piniaStores?: string[]
   /** Current Vue Router route path, if available */
@@ -56,7 +65,7 @@ export interface Annotation {
 export type AnnotationCreateInput = Pick<
   Annotation,
   'selector' | 'elementDescription' | 'componentChain' | 'feedback'
-> & Partial<Pick<Annotation, 'piniaStores' | 'route' | 'expected' | 'actual' | 'screenshot'>>
+> & Partial<Pick<Annotation, 'elements' | 'piniaStores' | 'route' | 'expected' | 'actual' | 'screenshot'>>
 
 // ─── Webhook Types ────────────────────────────────────────────────────────────
 

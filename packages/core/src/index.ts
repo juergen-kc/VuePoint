@@ -2,6 +2,7 @@ export type {
   AnnotationStatus,
   VueComponentInfo,
   AnnotationRect,
+  AnnotationElement,
   Annotation,
   AnnotationCreateInput,
   WebhookEvent,

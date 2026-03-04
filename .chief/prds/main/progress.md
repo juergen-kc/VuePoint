@@ -18,6 +18,7 @@
 - Build: `exports` field in package.json must list `types` before `import`/`require`
 - pnpm `--filter` uses the package `name` field, not the directory name (e.g., `--filter vuepoint-playground`)
 - PrimeVue 4: `@primevue/themes` for presets, `Select` (not `Dropdown`), `ToggleSwitch` (not `InputSwitch`)
+- `getBoundingClientRect()` returns viewport-relative coords — compare with `clientX`/`clientY`, not `pageX`/`pageY`, for `position: fixed` overlays
 - Use `nextTick` in plugin `install()` to defer access to `$router` / Pinia — handles any plugin registration order
 
 ---
@@ -337,4 +338,24 @@
   - Session lifecycle events need to be fired AFTER server is listening (not during setup) to avoid race conditions
   - Process signal handlers (`SIGINT`/`SIGTERM`) should `await` async cleanup before `process.exit()` to ensure webhook delivery completes
   - The test webhook endpoint should use the configured secret for the target URL — otherwise test deliveries won't match production HMAC signatures
+---
+
+## 2026-03-04 - US-015
+- Implemented Shift+drag multi-select annotation in VuePointToolbar.vue
+- Added `AnnotationElement` type to `@vuepoint/core` types for multi-element annotation data
+- Updated `AnnotationCreateInput` to accept optional `elements` array
+- Added drag-select logic: Shift+mousedown starts drag, mousemove draws selection rectangle, mouseup captures all leaf elements intersecting the rectangle
+- Selection rectangle rendered as fixed-position dashed border overlay with accent color
+- Elements captured by checking `getBoundingClientRect()` intersection with selection rect, filtering to leaf elements only
+- Multi-element annotations use summary selector `[multi-select: N elements]` and store individual element details in `elements` array
+- Updated Markdown output formatter to include multi-select element listing
+- Feedback modal header shows "Multi-select (N elements)" for multi-element annotations
+- Minimum drag size (10px) prevents accidental small drags from triggering multi-select
+- Typecheck passes clean; build succeeds
+- Files changed: types.ts (AnnotationElement type + elements field), index.ts (export), output.ts (multi-element formatting), VuePointToolbar.vue (drag state, handlers, template, CSS), prd.json, progress.md
+- **Learnings for future iterations:**
+  - `document.querySelectorAll('body *')` with `el.children.length === 0` is an efficient way to get only leaf elements for intersection testing
+  - `getBoundingClientRect()` returns viewport-relative coordinates — use `clientX`/`clientY` (not `pageX`/`pageY`) for consistent comparison with `position: fixed` overlay
+  - Shift+mousedown in capture phase must call `stopPropagation()` to prevent the regular click handler from also firing
+  - The `readonly()` wrapper in useAnnotations deeply freezes arrays — DTS build shows type warnings when passing readonly annotations to functions expecting mutable `Annotation[]` (pre-existing issue, not blocking)
 ---

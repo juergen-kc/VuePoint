@@ -56,6 +56,16 @@ export function formatAnnotation(
     }
   }
 
+  // Multi-element details (from Shift+drag selection)
+  if (ann.elements && ann.elements.length > 0) {
+    lines.push('')
+    lines.push(`**Multi-select:** ${ann.elements.length} elements`)
+    for (let i = 0; i < ann.elements.length; i++) {
+      const el = ann.elements[i]
+      lines.push(`- **[${i + 1}]** \`${el.selector}\` — ${el.elementDescription}`)
+    }
+  }
+
   lines.push('')
 
   // Feedback
