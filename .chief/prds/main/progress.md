@@ -173,3 +173,21 @@
   - Scroll events need `capture: true` to catch scroll events on nested scrollable containers, not just window scroll
   - `requestAnimationFrame` debouncing prevents layout thrashing during rapid scroll events
 ---
+
+## 2026-03-04 - US-011
+- Implemented full AnnotationPanel.vue replacing the stub
+- Scrollable list rendering all annotations with number badge, element description, feedback text, and status badge
+- Status-colored number badges matching AnnotationMarker colors (pending=blue, acknowledged=orange, resolved=green, dismissed=gray)
+- Delete button per item calls `store.remove(id)` with `@click.stop` to prevent scroll-to-element
+- Click on item calls `document.querySelector(selector).scrollIntoView({ behavior: 'smooth', block: 'center' })`
+- Empty state with pencil icon and hint text when no annotations exist
+- Panel header with title and close button (emits `close` event)
+- Custom scrollbar styling, `-webkit-line-clamp: 2` for feedback truncation
+- Typecheck passes clean
+- Files changed: AnnotationPanel.vue (full rewrite from stub), prd.json, progress.md
+- **Learnings for future iterations:**
+  - The toolbar conditionally renders the panel with `v-if="isExpanded && mode === 'panel'"` — panel visibility is controlled by the toolbar, not the panel itself
+  - `store.annotations` is a `readonly` ref — access `.value` in templates (not unwrapped like Pinia stores)
+  - `@click.stop` on delete buttons prevents the parent `@click` (scroll-to-element) from firing — important for nested click handlers
+  - Status badge uses dynamic class `:class="vp-status--${ann.status}"` for shared color theming between number badge and label
+---
