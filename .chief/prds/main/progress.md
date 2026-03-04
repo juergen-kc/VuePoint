@@ -305,3 +305,19 @@
   - Vite multi-entry config uses `entry: { name: 'path' }` object instead of a single string
   - The MCP SDK `@modelcontextprotocol/sdk` uses deep path imports (e.g., `/server/index.js`) which must be individually externalized in Vite
 ---
+
+## 2026-03-04 - US-026
+- REST API already had ~95% of functionality from initial scaffold — applied targeted fixes
+- Fixed default port from 3741 → 3742 (3741 is the bridge port, 3742 is the REST API port per architecture)
+- Added CSV export format to GET /api/v1/annotations/export with proper escaping and Content-Disposition header
+- Fixed markdown export to include all annotations (not just pending) — uses `formatAnnotation` directly instead of `formatAnnotationBatch` which filters to pending-only
+- Added optional `?status=` filter to export endpoint for filtered exports
+- Added `/api/v1/health` endpoint alongside existing `/health` (both skip auth)
+- All AC verified: Fastify on :3742, full CRUD, export (JSON/Markdown/CSV), component query, context, health, bearer auth, CORS
+- Typecheck passes clean; build succeeds
+- Files changed: api.ts (port, export, health), prd.json, progress.md
+- **Learnings for future iterations:**
+  - `formatAnnotationBatch` is designed for clipboard copy (pending-only), not for data export — use `formatAnnotation` in a loop for export endpoints
+  - CSV escaping: wrap in double quotes if value contains comma, quote, or newline; double-escape internal quotes
+  - Fastify route handlers can be shared as function references — `app.get('/a', handler); app.get('/b', handler)` avoids duplication
+---

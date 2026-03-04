@@ -26,7 +26,7 @@ import type {
 } from '@vuepoint/core'
 import { generateId, now } from '@vuepoint/core'
 
-const PORT = Number(process.env.VUEPOINT_API_PORT ?? 3741)
+const PORT = Number(process.env.VUEPOINT_API_PORT ?? 3742)
 const AUTH_TOKEN = process.env.VUEPOINT_AUTH_TOKEN
 const CORS_ORIGINS = process.env.VUEPOINT_CORS?.split(',') ?? ['http://localhost:5173', 'http://localhost:3000']
 
@@ -86,7 +86,7 @@ app.register(async (fastify) => {
 // Auth middleware
 app.addHook('preHandler', async (req, reply) => {
   if (!AUTH_TOKEN) return // auth disabled
-  if (req.url === '/health') return // health check always open
+  if (req.url === '/health' || req.url === '/api/v1/health') return // health check always open
 
   const header = req.headers.authorization
   if (!header?.startsWith('Bearer ') || header.slice(7) !== AUTH_TOKEN) {
@@ -96,12 +96,15 @@ app.addHook('preHandler', async (req, reply) => {
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 
-app.get('/health', async () => ({
+const healthResponse = async () => ({
   status: 'ok',
   version: '0.1.0',
   annotations: annotationStore.size,
   sessionId,
-}))
+})
+
+app.get('/health', healthResponse)
+app.get('/api/v1/health', healthResponse)
 
 // ─── Annotations CRUD ─────────────────────────────────────────────────────────
 
@@ -111,13 +114,37 @@ app.get('/api/v1/annotations', async (req) => {
   return status === 'all' ? all : all.filter((a) => a.status === status)
 })
 
-app.get('/api/v1/annotations/export', async (req) => {
-  const { format = 'json' } = req.query as { format?: 'json' | 'markdown' }
-  const all = Array.from(annotationStore.values())
+app.get('/api/v1/annotations/export', async (req, reply) => {
+  const { format = 'json', status } = req.query as { format?: 'json' | 'markdown' | 'csv'; status?: string }
+  let all = Array.from(annotationStore.values())
+  if (status && status !== 'all') {
+    all = all.filter((a) => a.status === status)
+  }
 
   if (format === 'markdown') {
-    const { formatAnnotationBatch } = await import('@vuepoint/core')
-    return formatAnnotationBatch(all)
+    const { formatAnnotation } = await import('@vuepoint/core')
+    const lines = ['## VuePoint Annotations', '', `> ${all.length} annotation${all.length !== 1 ? 's' : ''}`, '']
+    for (const ann of all) {
+      lines.push(formatAnnotation(ann))
+      lines.push('')
+      lines.push('---')
+      lines.push('')
+    }
+    reply.type('text/markdown')
+    return lines.join('\n').trimEnd()
+  }
+
+  if (format === 'csv') {
+    const headers = ['id', 'status', 'selector', 'elementDescription', 'feedback', 'expected', 'actual', 'route', 'createdAt', 'updatedAt']
+    const csvEscape = (v: string | undefined) => {
+      if (!v) return ''
+      if (v.includes(',') || v.includes('"') || v.includes('\n')) return `"${v.replace(/"/g, '""')}"`
+      return v
+    }
+    const rows = all.map((a) => headers.map((h) => csvEscape(String(a[h as keyof typeof a] ?? ''))).join(','))
+    reply.type('text/csv')
+    reply.header('Content-Disposition', 'attachment; filename="annotations.csv"')
+    return [headers.join(','), ...rows].join('\n')
   }
 
   return all
