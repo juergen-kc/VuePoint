@@ -96,3 +96,17 @@
   - The output format also supports opt-in fields via `MarkdownOutputOptions`: `includeScreenshot` and `includeProps`
   - `generateId()` and `now()` utility functions are co-located in output.ts for annotation creation
 ---
+
+## 2026-03-04 - US-006
+- Verified existing `primevue-filter.ts` implementation meets all acceptance criteria
+- `PRIMEVUE_FILTER`: 35 PrimeVue internal component names (icons, portals, transitions, focus traps, virtual scrollers)
+- `VUE_BUILTINS`: 10 Vue built-in names always filtered (Transition, KeepAlive, Suspense, Teleport, Fragment, etc.)
+- `buildFilter()`: `false` → empty Set, `string[]` → builtins + custom, `undefined` → builtins + PrimeVue defaults
+- `VuePointOptions.filterComponents` typed as `string[] | false` in types.ts
+- All exports in `@vuepoint/core` barrel
+- Typecheck passes clean
+- Files changed: prd.json (mark passes), progress.md
+- **Learnings for future iterations:**
+  - `buildFilter(customArray)` unions custom list WITH Vue builtins — builtins can never be shown unless `false` is passed
+  - Vue builtins include RouterView/RouterLink — these are framework components that shouldn't appear in annotation chains
+---
