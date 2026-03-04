@@ -627,3 +627,18 @@
   - `__vueParentComponent` on DOM elements is accessible regardless of which Vue runtime copy reads it
   - Packages with Chrome-specific types (`@types/chrome`) should be excluded from root tsconfig to avoid polluting other packages' type environments
 ---
+
+## 2026-03-04 - US-035
+- Created `toSlackMessage()` transformer in `packages/core/src/slack-transformer.ts`
+- Transforms VuePoint `WebhookPayload` into Slack Block Kit format with: status emoji, element/selector fields, component chain, expected/actual, Pinia stores, screenshot thumbnail, resolution summary, "View in VuePoint" link
+- Exported `toSlackMessage`, `SlackMessage`, `SlackBlock`, `SlackTextObject`, `SlackTransformerOptions` from `@vuepoint/core`
+- Created dedicated docs page `docs/guide/slack-webhook.md` with relay server example, transformer API reference, and event filtering guide
+- Added Slack integration section to existing `docs/guide/webhooks.md`
+- Added sidebar entry in VitePress config
+- Files changed: `packages/core/src/slack-transformer.ts` (new), `packages/core/src/index.ts`, `docs/guide/slack-webhook.md` (new), `docs/guide/webhooks.md`, `docs/.vitepress/config.ts`
+- **Learnings for future iterations:**
+  - Slack incoming webhooks accept Block Kit JSON directly — no SDK needed, just POST with `Content-Type: application/json`
+  - Slack mrkdwn is different from standard Markdown — `<`, `>`, `&` must be escaped as HTML entities
+  - The transformer pattern (pure function, no side effects) is reusable for Linear/Jira templates (US-036)
+  - Pre-existing lint errors in `selector.test.ts` and `output.test.ts` are unrelated to new code
+---

@@ -17,6 +17,7 @@ export default defineConfig({
           { text: 'Configuration', link: '/guide/configuration' },
           { text: 'MCP Integration', link: '/guide/mcp-integration' },
           { text: 'Webhooks', link: '/guide/webhooks' },
+          { text: 'Slack Webhook Template', link: '/guide/slack-webhook' },
           { text: 'Nuxt Module', link: '/guide/nuxt-module' },
         ],
       },

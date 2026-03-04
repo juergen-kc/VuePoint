@@ -522,7 +522,7 @@
         "Configuration example in docs"
       ],
       "priority": 5,
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-036",

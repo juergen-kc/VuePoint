@@ -16,3 +16,10 @@ export type {
 export { generateSelector, describeElement } from './selector.js'
 export { formatAnnotation, formatAnnotationBatch, generateId, now } from './output.js'
 export { PRIMEVUE_FILTER, VUE_BUILTINS, buildFilter } from './primevue-filter.js'
+export {
+  toSlackMessage,
+  type SlackMessage,
+  type SlackBlock,
+  type SlackTextObject,
+  type SlackTransformerOptions,
+} from './slack-transformer.js'

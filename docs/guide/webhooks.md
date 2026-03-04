@@ -120,6 +120,30 @@ The toolbar settings panel shows webhook delivery history:
 
 Failed deliveries are highlighted in red for quick identification.
 
+## Slack Integration
+
+VuePoint ships a pre-built Slack Block Kit transformer that converts webhook payloads into rich Slack messages. See the dedicated [Slack Webhook Template](/guide/slack-webhook) page for full details.
+
+Quick setup:
+
+```ts
+// webhook-relay.ts — a small relay server
+import { toSlackMessage } from '@vuepoint/core'
+
+export function handleVuePointWebhook(payload) {
+  const slackPayload = toSlackMessage(payload, {
+    dashboardUrl: 'https://dashboard.example.com',
+    includeScreenshot: true,
+  })
+
+  return fetch(process.env.SLACK_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(slackPayload),
+  })
+}
+```
+
 ## REST API Endpoints
 
 Webhooks can also be managed via the REST API:
