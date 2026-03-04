@@ -270,13 +270,37 @@ app.post('/api/v1/webhooks/test', async (req) => {
   const target = url ?? webhooks[0]?.url
   if (!target) return { error: 'No webhook configured' }
 
+  // Find matching webhook config to use its secret for signing
+  const wh = webhooks.find((w) => w.url === target)
+
   const testPayload: WebhookPayload = {
     event: 'session.started',
     timestamp: now(),
     meta: { sessionId, ...appMeta },
   }
-  const delivered = await deliverWebhook(target, undefined, testPayload)
+  const delivered = await deliverWebhook(target, wh?.secret, testPayload)
   return { delivered, url: target }
+})
+
+// Fire batch_copied event (called by browser after clipboard copy)
+app.post('/api/v1/webhooks/batch-copied', async (req) => {
+  const { annotations } = req.body as { annotations?: Annotation[] }
+  const payload: WebhookPayload = {
+    event: 'annotation.batch_copied',
+    timestamp: now(),
+    meta: { sessionId, ...appMeta },
+  }
+  // Include first annotation for context, or none
+  if (annotations?.length) {
+    payload.annotation = annotations[0]
+  }
+  const matching = webhooks.filter(
+    (w) => !w.events || w.events.includes('annotation.batch_copied')
+  )
+  await Promise.allSettled(
+    matching.map((w) => deliverWebhookWithRetry(w.url, w.secret, payload))
+  )
+  return { fired: matching.length }
 })
 
 // ─── Webhook engine ───────────────────────────────────────────────────────────
@@ -352,3 +376,15 @@ function sleep(ms: number): Promise<void> {
 
 await app.listen({ port: PORT, host: '127.0.0.1' })
 console.log(`[VuePoint API] Listening on http://127.0.0.1:${PORT}`)
+
+// Fire session.started webhook on boot
+await fireWebhook('session.started')
+
+// Fire session.ended webhook on graceful shutdown
+async function shutdown(): Promise<void> {
+  await fireWebhook('session.ended')
+  await app.close()
+  process.exit(0)
+}
+process.on('SIGINT', shutdown)
+process.on('SIGTERM', shutdown)
