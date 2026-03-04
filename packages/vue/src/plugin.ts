@@ -13,11 +13,12 @@
  */
 
 import type { App, Plugin } from 'vue'
+import { nextTick } from 'vue'
 import type { VuePointOptions } from '@vuepoint/core'
 import { buildFilter } from '@vuepoint/core'
 import { useAnnotationsStore, VUEPOINT_ANNOTATIONS_KEY } from './composables/useAnnotations.js'
 import { createBridgeClient } from '@vuepoint/bridge'
-import type { BridgeEvent } from '@vuepoint/bridge'
+import type { BridgeEvent, AppContext } from '@vuepoint/bridge'
 import VuePointToolbar from './components/VuePointToolbar.vue'
 
 export const VUEPOINT_OPTIONS_KEY = Symbol('vuepoint:options')
@@ -142,6 +143,13 @@ const VuePoint: Plugin<VuePointOptions | undefined> = {
       }
     })
 
+    // ── Context sync — push route and Pinia stores to bridge ─────────────
+    // We use nextTick to allow the router plugin to install first (in case
+    // VuePoint is registered before the router).
+    nextTick(() => {
+      setupContextSync(app, bridge, options)
+    })
+
     // ── Mount toolbar overlay ─────────────────────────────────────────────
     // We create a separate app instance for the toolbar to fully isolate
     // VuePoint's own component tree from the host app. This prevents our
@@ -181,6 +189,69 @@ export default VuePoint
 
 import { createApp, defineComponent, h } from 'vue'
 import type { AnnotationsStore } from './composables/useAnnotations.js'
+import type { BridgeClient } from '@vuepoint/bridge'
+
+/**
+ * Watches Vue Router for navigation events and collects active Pinia store IDs,
+ * then pushes context updates to the bridge so the MCP server and REST API
+ * always reflect the current app state.
+ */
+function setupContextSync(app: App, bridge: BridgeClient, options: VuePointOptions): void {
+  // Access the router via globalProperties — works regardless of plugin install order
+  // because nextTick defers until after all synchronous app.use() calls complete
+  const router = app.config.globalProperties.$router as
+    | { currentRoute: { value: { path?: string; name?: string | symbol; matched?: Array<{ components?: Record<string, { name?: string; __name?: string; __file?: string }> }> } }; afterEach: (guard: () => void) => () => void }
+    | undefined
+
+  // Pinia instance — _s is the internal Map<storeId, StoreInstance>
+  const pinia = options.pinia?.enabled
+    ? (options.pinia.instance as { _s?: Map<string, unknown> } | undefined)
+    : undefined
+
+  function buildContext(): AppContext {
+    const ctx: AppContext = {}
+
+    if (router) {
+      const route = router.currentRoute.value
+      ctx.route = route.path
+      ctx.routeName = typeof route.name === 'string' ? route.name : undefined
+
+      // Resolve the page component — the deepest matched route's default component
+      if (route.matched?.length) {
+        const deepest = route.matched[route.matched.length - 1]
+        const comp = deepest.components?.default as
+          | { name?: string; __name?: string; __file?: string }
+          | undefined
+        if (comp) {
+          ctx.pageComponent = comp.__name ?? comp.name ?? fileToName(comp.__file)
+        }
+      }
+    }
+
+    if (pinia?._s) {
+      ctx.piniaStores = Array.from(pinia._s.keys())
+    }
+
+    return ctx
+  }
+
+  // Push initial context
+  bridge.updateContext(buildContext())
+
+  // Watch route changes
+  if (router) {
+    router.afterEach(() => {
+      bridge.updateContext(buildContext())
+    })
+  }
+}
+
+/** Extract component name from __file path: 'src/views/HomeView.vue' → 'HomeView' */
+function fileToName(file?: string): string | undefined {
+  if (!file) return undefined
+  const base = file.split('/').pop() ?? file
+  return base.replace(/\.vue$/, '')
+}
 
 function createToolbarApp(
   component: ReturnType<typeof defineComponent>,

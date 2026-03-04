@@ -18,6 +18,7 @@
 - Build: `exports` field in package.json must list `types` before `import`/`require`
 - pnpm `--filter` uses the package `name` field, not the directory name (e.g., `--filter vuepoint-playground`)
 - PrimeVue 4: `@primevue/themes` for presets, `Select` (not `Dropdown`), `ToggleSwitch` (not `InputSwitch`)
+- Use `nextTick` in plugin `install()` to defer access to `$router` / Pinia — handles any plugin registration order
 
 ---
 
@@ -270,4 +271,21 @@
   - Bridge sync needs a re-entrancy guard (`_bridgeSyncing`) to prevent store.create → bridge.sync → bridge.onEvent → store.create infinite loops
   - SharedWorker constructor needs `{ type: 'module' }` option when the worker uses ES module imports
   - `import.meta.url` in the bridge client auto-resolves the worker.js URL relative to the client module — Vite handles this in dev
+---
+
+## 2026-03-04 - US-024
+- Added context sync to `plugin.ts` — pushes route and Pinia store info to bridge on navigation
+- Uses `nextTick` to defer setup until after all `app.use()` calls complete (handles VuePoint installed before router)
+- `setupContextSync()` accesses `$router` via `app.config.globalProperties` and Pinia via `options.pinia.instance._s`
+- `buildContext()` collects: route path, route name, deepest matched page component name, active Pinia store IDs
+- Initial context pushed immediately, then `router.afterEach()` pushes on every navigation
+- No changes needed to bridge/worker/API/MCP — all context endpoints were already implemented in US-023
+- Typecheck passes clean; build succeeds
+- Files changed: plugin.ts (context sync logic), prd.json, progress.md
+- **Learnings for future iterations:**
+  - `nextTick` in Vue's `install()` defers until after all synchronous `app.use()` calls complete — safe way to access router/pinia regardless of plugin registration order
+  - Vue Router's `afterEach` guard is the right hook for context sync — fires after navigation confirms, not before
+  - Pinia's `_s` property (Map<storeId, StoreInstance>) is an undocumented but stable internal that lists all instantiated stores
+  - The `matched` array on Vue Router's route contains route records with `components.default` — the deepest match is the page-level component
+  - Component name resolution mirrors `useVueInspector`: `__name` → `name` → filename extraction from `__file`
 ---
