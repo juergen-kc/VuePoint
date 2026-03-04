@@ -479,7 +479,7 @@
         "Status checks required for merge"
       ],
       "priority": 4,
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-033",

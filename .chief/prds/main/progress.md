@@ -22,6 +22,9 @@
 - Nuxt runtime plugins use `#imports` virtual module — exclude `packages/nuxt/src/runtime/**` from root tsconfig
 - Use `nextTick` in plugin `install()` to defer access to `$router` / Pinia — handles any plugin registration order
 - Pinia stores have `$id` property — use this to detect store references in Vue component `setupState`
+- ESLint: flat config with `no-undef: off` for TS projects; use `flat/essential` for Vue plugin to avoid template formatting noise
+- Quality scripts: `pnpm typecheck`, `pnpm lint`, `pnpm test` — all must pass for CI
+- Vitest config at root with `passWithNoTests: true` until test files are added
 
 ---
 
@@ -563,4 +566,21 @@
   - VitePress serves files from `docs/public/` at the root path — images at `docs/public/images/foo.svg` are referenced as `/images/foo.svg` in markdown
   - SVG illustrations work well as documentation screenshots since they're lightweight, scalable, and version-control friendly
   - VitePress `::: tip` and `::: info` containers provide callout boxes for prerequisites and explanations
+---
+
+## 2026-03-04 - US-032
+- Created GitHub Actions CI workflow at `.github/workflows/ci.yml`
+- Steps: checkout → pnpm setup → Node setup → install → typecheck → lint → test
+- Matrix: Node 18 and 20 on ubuntu-latest
+- Runs on push to main and on all PRs
+- Set up ESLint with flat config (`eslint.config.js`): typescript-eslint + eslint-plugin-vue/essential
+- Set up Vitest with `vitest.config.ts` (passWithNoTests until US-033 adds tests)
+- Added `lint` and `test` scripts to root `package.json`
+- All quality checks pass: typecheck clean, lint 0 errors (3 warnings), test passes with no tests
+- Files changed: `.github/workflows/ci.yml` (new), `eslint.config.js` (new), `vitest.config.ts` (new), `package.json`, `pnpm-lock.yaml`
+- **Learnings for future iterations:**
+  - `no-undef` should be turned off for TypeScript projects — TS handles undefined variables more accurately than ESLint
+  - Use `flat/essential` instead of `flat/recommended` for eslint-plugin-vue to avoid opinionated template formatting that conflicts with existing code
+  - `pnpm/action-setup@v4` auto-detects pnpm version from `packageManager` field in `package.json`
+  - `passWithNoTests: true` in Vitest config lets CI pass before tests exist (US-033 will add them)
 ---
