@@ -256,3 +256,30 @@ else
 fi
 
 echo ""
+
+# ── Phase 7: Done ─────────────────────────────────────────────────────────────
+# Clean up tarballs
+rm -rf "$TARBALL_DIR"
+
+echo ""
+printf '\033[1;32m══════════════════════════════════════════════════\033[0m\n'
+printf '\033[1;32m  VuePoint installed successfully!\033[0m\n'
+printf '\033[1;32m══════════════════════════════════════════════════\033[0m\n'
+echo ""
+echo "  Next steps:"
+echo ""
+echo "    1. Start the dev server:"
+echo "       pnpm dev"
+echo ""
+echo "    2. Open the URL Vite prints (usually http://localhost:5173)"
+echo ""
+echo "    3. Click the \"Annotate\" button in the bottom-right corner"
+echo ""
+echo "    4. Click any element → describe the issue → submit"
+echo ""
+echo "    5. Click the clipboard icon to copy annotations for AI agents"
+echo ""
+echo "  Keyboard shortcut: Ctrl+Shift+A (Cmd+Shift+A on Mac)"
+echo ""
+echo "  Full guide: https://github.com/juergen-kc/VuePoint/blob/main/docs/guides/circuit-playground-setup.md"
+echo ""
