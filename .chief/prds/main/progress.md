@@ -126,3 +126,18 @@
   - `readonly()` wrapping on `annotations` prevents external mutation but internal `annotations.value` is still mutable for CRUD
   - `update()` spreads `updatedAt: now()` on every mutation — all status changes go through `update()` for consistent timestamps
 ---
+
+## 2026-03-04 - US-008
+- Verified existing `plugin.ts` implementation meets all acceptance criteria
+- `app.use(VuePoint)` works with zero config (options defaults to `{}`)
+- `app.use(VuePoint, { ...options })` accepts full `VuePointOptions`
+- Production guard: checks `process.env.NODE_ENV !== 'production'` and `!import.meta.env?.PROD`
+- Toolbar mounted in isolated Vue app via `createApp()` on `<div id="__vuepoint-root">` — never appears in host `__vueParentComponent` chain
+- Keyboard shortcut parsed from string format (`ctrl+shift+a`) and registered on `keydown`
+- Typecheck passes clean
+- Files changed: prd.json (mark passes), progress.md
+- **Learnings for future iterations:**
+  - The isolated app pattern (`createApp` + separate mount point) is how VuePoint avoids contaminating the host app's component tree — important for annotation accuracy
+  - `registerShortcut()` supports ctrl/meta/shift/alt modifiers and prevents default on match
+  - The `__VUE__` global is only present in Vue dev builds — plugin warns if missing
+---
