@@ -19,6 +19,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
+  'reply-question': [id: string, reply: string]
 }>()
 
 // ─── Inline Editing ─────────────────────────────────────────────────────────
@@ -58,6 +59,44 @@ function handleEditKeydown(e: KeyboardEvent) {
   } else if (e.key === 'Escape') {
     e.preventDefault()
     cancelEdit()
+  }
+}
+
+// ─── Agent Question Reply ────────────────────────────────────────────────────
+
+const replyingId = ref<string | null>(null)
+const replyText = ref('')
+
+function startReply(annotationId: string) {
+  replyingId.value = annotationId
+  replyText.value = ''
+  nextTick(() => {
+    // Focus the reply input
+    const el = document.querySelector('.vp-reply-input') as HTMLTextAreaElement | null
+    el?.focus()
+  })
+}
+
+function sendReply() {
+  if (replyingId.value && replyText.value.trim()) {
+    emit('reply-question', replyingId.value, replyText.value.trim())
+  }
+  replyingId.value = null
+  replyText.value = ''
+}
+
+function cancelReply() {
+  replyingId.value = null
+  replyText.value = ''
+}
+
+function handleReplyKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    sendReply()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    cancelReply()
   }
 }
 
@@ -146,6 +185,52 @@ function statusLabel(status: Annotation['status']): string {
           <span class="vp-panel-item-status" :class="`vp-status--${ann.status}`">
             {{ statusLabel(ann.status) }}
           </span>
+
+          <!-- Agent question display -->
+          <div v-if="ann.agentQuestion" class="vp-question-block" @click.stop>
+            <div class="vp-question-header">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span>Agent asks:</span>
+            </div>
+            <div class="vp-question-text">{{ ann.agentQuestion }}</div>
+
+            <!-- Reply display (if already answered) -->
+            <div v-if="ann.agentQuestionReply" class="vp-reply-display">
+              <span class="vp-reply-label">Your reply:</span>
+              <span class="vp-reply-text">{{ ann.agentQuestionReply }}</span>
+            </div>
+
+            <!-- Reply input (if not yet answered) -->
+            <div v-else-if="replyingId === ann.id" class="vp-reply-form">
+              <textarea
+                v-model="replyText"
+                class="vp-reply-input"
+                placeholder="Type your reply…"
+                rows="2"
+                @keydown="handleReplyKeydown"
+                @click.stop
+              />
+              <div class="vp-reply-actions">
+                <button class="vp-btn-ghost vp-btn-sm" @click.stop="cancelReply">Cancel</button>
+                <button
+                  class="vp-btn-reply"
+                  :disabled="!replyText.trim()"
+                  @click.stop="sendReply"
+                >Reply</button>
+              </div>
+            </div>
+
+            <!-- Reply button (if not yet answered and not editing) -->
+            <button
+              v-else
+              class="vp-btn-reply-start"
+              @click.stop="startReply(ann.id)"
+            >Reply to agent</button>
+          </div>
         </div>
 
         <!-- Right: delete button -->
@@ -353,6 +438,119 @@ function statusLabel(status: Annotation['status']): string {
 .vp-panel-item-delete:hover {
   color: #ef4444;
   background: rgba(239, 68, 68, 0.1);
+}
+
+/* ── Agent question block ────────────────────────────────────────────────── */
+.vp-question-block {
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 6px;
+  cursor: default;
+}
+
+.vp-question-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #f59e0b;
+  margin-bottom: 4px;
+}
+
+.vp-question-text {
+  font-size: 12px;
+  color: var(--vp-text, #e2e8f0);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.vp-reply-display {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+.vp-reply-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #22c55e;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.vp-reply-text {
+  display: block;
+  font-size: 12px;
+  color: var(--vp-text, #e2e8f0);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.vp-reply-form {
+  margin-top: 4px;
+}
+
+.vp-reply-input {
+  width: 100%;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--vp-text, #e2e8f0);
+  background: var(--vp-bg, #1e1e2e);
+  border: 1px solid #f59e0b;
+  border-radius: 4px;
+  padding: 4px 6px;
+  resize: vertical;
+  line-height: 1.4;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.vp-reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.vp-btn-sm {
+  font-size: 11px;
+  padding: 2px 6px;
+}
+
+.vp-btn-reply {
+  height: 24px;
+  padding: 0 10px;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.vp-btn-reply:hover:not(:disabled) { background: #d97706; }
+.vp-btn-reply:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.vp-btn-reply-start {
+  display: inline-block;
+  height: 22px;
+  padding: 0 8px;
+  background: transparent;
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.vp-btn-reply-start:hover {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: #f59e0b;
 }
 
 /* ── Status colors (shared between badge and label) ──────────────────────── */

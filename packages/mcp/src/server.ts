@@ -122,7 +122,8 @@ const tools = [
     name: 'vuepoint_ask',
     description:
       'Send a clarifying question to the annotation author. ' +
-      'The question appears in the VuePoint toolbar for the user to answer.',
+      'The question appears in the VuePoint toolbar for the user to answer. ' +
+      'Use vuepoint_get_annotation to check for the reply in agentQuestionReply.',
     inputSchema: {
       type: 'object' as const,
       properties: {

@@ -160,6 +160,7 @@ const selectionRectStyle = computed(() => {
 
 const annotations = computed(() => props.annotationsStore.annotations.value)
 const pendingCount = computed(() => props.annotationsStore.pending.value.length)
+const questionCount = computed(() => props.annotationsStore.withUnansweredQuestions.value.length)
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 
@@ -506,6 +507,10 @@ function handleMarkerSelect(_id: string) {
   mode.value = 'panel'
 }
 
+function handleReplyQuestion(id: string, reply: string) {
+  props.annotationsStore.replyToQuestion(id, reply)
+}
+
 function getCurrentRoute(): string | undefined {
   // Read from vue-router if available on window (non-invasive)
   try {
@@ -624,6 +629,7 @@ function getCurrentRoute(): string | undefined {
         v-if="isExpanded && mode === 'panel'"
         :store="annotationsStore"
         @close="isExpanded = false; mode = 'idle'"
+        @reply-question="handleReplyQuestion"
       />
     </Transition>
 
@@ -700,6 +706,21 @@ function getCurrentRoute(): string | undefined {
         @click="isExpanded = !isExpanded; mode = isExpanded ? 'panel' : 'idle'"
       >
         {{ pendingCount }}
+      </button>
+
+      <!-- Agent question badge -->
+      <button
+        v-if="questionCount > 0"
+        class="vp-question-btn"
+        title="Agent questions need your reply"
+        @click="isExpanded = true; mode = 'panel'"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        {{ questionCount }}
       </button>
 
       <!-- Copy all -->
@@ -845,6 +866,30 @@ function getCurrentRoute(): string | undefined {
 }
 .vp-count-btn:hover { background: #dc2626; }
 .vp-count-btn--active { background: var(--vp-accent); }
+
+.vp-question-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  animation: vp-pulse 2s ease-in-out infinite;
+}
+.vp-question-btn:hover { background: #d97706; }
+
+@keyframes vp-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+}
 
 .vp-icon-btn {
   width: 32px;

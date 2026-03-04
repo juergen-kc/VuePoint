@@ -28,6 +28,10 @@ export function useAnnotationsStore() {
     annotations.value.filter((a) => a.status === 'resolved')
   )
 
+  const withUnansweredQuestions = computed(() =>
+    annotations.value.filter((a) => a.agentQuestion && !a.agentQuestionReply)
+  )
+
   const all = readonly(annotations)
 
   function getById(id: string): Annotation | undefined {
@@ -79,6 +83,13 @@ export function useAnnotationsStore() {
     return true
   }
 
+  function replyToQuestion(id: string, reply: string): Annotation | null {
+    return update(id, {
+      agentQuestionReply: reply,
+      agentQuestionReplyAt: now(),
+    })
+  }
+
   function clear(): void {
     annotations.value = []
   }
@@ -88,6 +99,7 @@ export function useAnnotationsStore() {
     annotations: all,
     pending,
     resolved,
+    withUnansweredQuestions,
     // reads
     getById,
     // writes
@@ -97,6 +109,7 @@ export function useAnnotationsStore() {
     resolve,
     dismiss,
     remove,
+    replyToQuestion,
     clear,
   }
 }

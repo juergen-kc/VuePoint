@@ -18,6 +18,7 @@ export type BridgeCommand =
   | { type: 'clear' }
   | { type: 'context'; context: AppContext }
   | { type: 'get_state' }
+  | { type: 'reply_question'; id: string; reply: string }
 
 // ─── Worker → Tab messages ──────────────────────────────────────────────────
 
@@ -29,6 +30,7 @@ export type BridgeEvent =
   | { type: 'annotations_cleared' }
   | { type: 'context_updated'; context: AppContext }
   | { type: 'connected'; tabId: string; tabCount: number }
+  | { type: 'question_received'; id: string; question: string }
 
 // ─── App context ────────────────────────────────────────────────────────────
 

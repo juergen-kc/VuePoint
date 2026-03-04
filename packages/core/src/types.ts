@@ -66,6 +66,14 @@ export interface Annotation {
   resolvedBy?: string
   resolutionSummary?: string
   dismissReason?: string
+  /** Question from an AI agent (set via vuepoint_ask MCP tool) */
+  agentQuestion?: string
+  /** Timestamp when the agent question was sent */
+  agentQuestionAt?: string
+  /** User's reply to the agent question */
+  agentQuestionReply?: string
+  /** Timestamp when the user replied */
+  agentQuestionReplyAt?: string
 }
 
 export type AnnotationCreateInput = Pick<

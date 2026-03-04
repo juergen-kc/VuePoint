@@ -64,6 +64,7 @@ const VuePoint: Plugin<VuePointOptions | undefined> = {
     const origUpdate = annotationsStore.update.bind(annotationsStore)
     const origRemove = annotationsStore.remove.bind(annotationsStore)
     const origClear = annotationsStore.clear.bind(annotationsStore)
+    const origReplyToQuestion = annotationsStore.replyToQuestion.bind(annotationsStore)
 
     // Monkey-patch store methods to sync to bridge
     // Using Object.assign to extend the store with bridge-aware versions
@@ -100,12 +101,21 @@ const VuePoint: Plugin<VuePointOptions | undefined> = {
       }
     }
 
+    const wrappedReplyToQuestion: typeof origReplyToQuestion = (id, reply) => {
+      const result = origReplyToQuestion(id, reply)
+      if (result && !patchedStore._bridgeSyncing) {
+        bridge.replyQuestion(id, reply)
+      }
+      return result
+    }
+
     // Apply wrapped methods
     Object.assign(annotationsStore, {
       create: wrappedCreate,
       update: wrappedUpdate,
       remove: wrappedRemove,
       clear: wrappedClear,
+      replyToQuestion: wrappedReplyToQuestion,
     })
 
     // Listen for events from other tabs via bridge

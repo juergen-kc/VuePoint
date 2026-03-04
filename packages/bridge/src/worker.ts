@@ -133,6 +133,25 @@ function handleCommand(fromTabId: string, cmd: BridgeCommand): void {
       }
       break
     }
+
+    case 'reply_question': {
+      const existing = annotations.get(cmd.id)
+      if (existing) {
+        const updated = {
+          ...existing,
+          agentQuestionReply: cmd.reply,
+          agentQuestionReplyAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+        annotations.set(cmd.id, updated)
+        broadcast({ type: 'annotation_updated', annotation: updated }, fromTabId)
+        syncToApi('PATCH', `/api/v1/annotations/${cmd.id}`, {
+          agentQuestionReply: cmd.reply,
+          agentQuestionReplyAt: updated.agentQuestionReplyAt,
+        })
+      }
+      break
+    }
   }
 }
 
@@ -184,6 +203,7 @@ function connectWebSocket(): void {
           type: string
           annotation?: Annotation
           id?: string
+          question?: string
         }
 
         // API server pushed an update (e.g., MCP agent acknowledged/resolved)
@@ -198,6 +218,24 @@ function connectWebSocket(): void {
             if (data.id) {
               annotations.delete(data.id)
               broadcast({ type: 'annotation_removed', id: data.id })
+            }
+            break
+          case 'question_received':
+            if (data.id && data.question) {
+              // Update the annotation with the question
+              const ann = annotations.get(data.id)
+              if (ann) {
+                const updated = {
+                  ...ann,
+                  agentQuestion: data.question,
+                  agentQuestionAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                }
+                annotations.set(data.id, updated)
+                broadcast({ type: 'annotation_updated', annotation: updated })
+              }
+              // Also broadcast the dedicated question event for UI notification
+              broadcast({ type: 'question_received', id: data.id, question: data.question })
             }
             break
         }

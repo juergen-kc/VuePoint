@@ -227,11 +227,43 @@ app.post('/api/v1/annotations/:id/ask', async (req, reply) => {
   const ann = annotationStore.get(id)
   if (!ann) return reply.status(404).send({ error: 'Not found' })
   const { question } = req.body as { question: string }
-  // In Phase 2: push question to browser via WebSocket/SSE
-  // For now: store as a note in the annotation
-  const updated = { ...ann, agentQuestion: question, updatedAt: now() }
-  annotationStore.set(id, updated as Annotation)
+
+  // Store question on the annotation
+  const updated: Annotation = {
+    ...ann,
+    agentQuestion: question,
+    agentQuestionAt: now(),
+    agentQuestionReply: undefined,
+    agentQuestionReplyAt: undefined,
+    updatedAt: now(),
+  }
+  annotationStore.set(id, updated)
+
+  // Push question to browser tabs via WebSocket → SharedWorker
+  broadcastWs({ type: 'question_received', id, question })
+
   return { status: 'question_sent', question }
+})
+
+// Reply endpoint — browser sends reply back for MCP agent to poll
+app.post('/api/v1/annotations/:id/reply', async (req, reply) => {
+  const { id } = req.params as { id: string }
+  const ann = annotationStore.get(id)
+  if (!ann) return reply.status(404).send({ error: 'Not found' })
+  const { reply: replyText } = req.body as { reply: string }
+
+  const updated: Annotation = {
+    ...ann,
+    agentQuestionReply: replyText,
+    agentQuestionReplyAt: now(),
+    updatedAt: now(),
+  }
+  annotationStore.set(id, updated)
+
+  // Broadcast update to all WS clients so MCP can see the reply
+  broadcastWs({ type: 'annotation_updated', annotation: updated })
+
+  return { status: 'reply_sent', reply: replyText }
 })
 
 // ─── App context ──────────────────────────────────────────────────────────────

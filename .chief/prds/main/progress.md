@@ -430,3 +430,24 @@
   - `@blur` fires before `@keydown` Enter in some browsers — saving on both is safe because `saveEdit()` is idempotent (clears `editingId` on first call)
   - `@click.stop` on the textarea prevents the parent `@click` (scroll-to-element) from firing during text editing
 ---
+
+## 2026-03-04 - US-020
+- Implemented agent question display in toolbar — full end-to-end flow from MCP agent to browser UI and back
+- Added `agentQuestion`, `agentQuestionAt`, `agentQuestionReply`, `agentQuestionReplyAt` fields to `Annotation` type in core
+- Updated bridge protocol: added `question_received` event (Worker → Tab) and `reply_question` command (Tab → Worker)
+- Updated SharedWorker to handle `question_received` from API WebSocket (stores on annotation + broadcasts to tabs) and `reply_question` from tabs (stores reply + syncs to API)
+- Updated API server: `POST /api/v1/annotations/:id/ask` now broadcasts `question_received` via WebSocket instead of being a stub; added `POST /api/v1/annotations/:id/reply` endpoint for browser replies
+- Added `withUnansweredQuestions` computed and `replyToQuestion()` method to `useAnnotationsStore`
+- Added pulsing amber question badge in toolbar (question mark icon + count) when unanswered questions exist
+- AnnotationPanel shows agent questions inline with each annotation: amber-bordered question block with "Agent asks:" header, question text, reply button, reply textarea, and answered reply display
+- Bridge client `replyQuestion()` method sends reply via SharedWorker → API
+- Plugin.ts monkey-patches `replyToQuestion` for bridge sync (same `_bridgeSyncing` pattern as other mutations)
+- MCP tool description updated to reference polling `agentQuestionReply` via `vuepoint_get_annotation`
+- Typecheck passes clean; build succeeds
+- Files changed: types.ts, bridge/types.ts, bridge/worker.ts, bridge/client.ts, api.ts, server.ts, useAnnotations.ts, VuePointToolbar.vue, AnnotationPanel.vue, plugin.ts, prd.json, progress.md
+- **Learnings for future iterations:**
+  - The bridge uses a dual-event pattern for questions: `annotation_updated` for data sync + `question_received` as a notification trigger — this avoids UI components needing to diff every update to detect new questions
+  - The `reply` endpoint on the API is separate from `PATCH /annotations/:id` because the MCP agent's `vuepoint_ask` and the user's reply are conceptually different actors; using separate endpoints keeps authorization clearer
+  - CSS `animation` (keyframes `vp-pulse`) on buttons creates visual urgency for unanswered questions without JavaScript polling
+  - The question badge uses amber (#f59e0b) consistently across toolbar badge, panel question block border, reply button — semantic color for "needs attention"
+---

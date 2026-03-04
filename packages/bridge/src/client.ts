@@ -39,6 +39,8 @@ export interface BridgeClient {
   updateContext(context: AppContext): void
   /** Request full state from the worker */
   requestState(): void
+  /** Reply to an agent question */
+  replyQuestion(id: string, reply: string): void
   /** Register a callback for state events */
   onEvent(handler: (event: BridgeEvent) => void): () => void
 }
@@ -123,6 +125,10 @@ export function createBridgeClient(options: BridgeClientOptions = {}): BridgeCli
     sendCommand({ type: 'get_state' })
   }
 
+  function replyQuestion(id: string, reply: string): void {
+    sendCommand({ type: 'reply_question', id, reply })
+  }
+
   function onEvent(handler: (event: BridgeEvent) => void): () => void {
     handlers.add(handler)
     return () => handlers.delete(handler)
@@ -140,6 +146,7 @@ export function createBridgeClient(options: BridgeClientOptions = {}): BridgeCli
     clearAnnotations,
     updateContext,
     requestState,
+    replyQuestion,
     onEvent,
   }
 }
