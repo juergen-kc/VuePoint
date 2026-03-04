@@ -23,3 +23,16 @@ export {
   type SlackTextObject,
   type SlackTransformerOptions,
 } from './slack-transformer.js'
+export {
+  toLinearIssue,
+  type LinearIssuePayload,
+  type LinearTransformerOptions,
+} from './linear-transformer.js'
+export {
+  toJiraIssue,
+  type JiraIssuePayload,
+  type JiraDocument,
+  type JiraNode,
+  type JiraMarks,
+  type JiraTransformerOptions,
+} from './jira-transformer.js'

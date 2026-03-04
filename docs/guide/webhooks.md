@@ -120,9 +120,13 @@ The toolbar settings panel shows webhook delivery history:
 
 Failed deliveries are highlighted in red for quick identification.
 
-## Slack Integration
+## Integration Templates
 
-VuePoint ships a pre-built Slack Block Kit transformer that converts webhook payloads into rich Slack messages. See the dedicated [Slack Webhook Template](/guide/slack-webhook) page for full details.
+VuePoint ships pre-built payload transformers for popular tools:
+
+- **Slack** — Block Kit messages with rich formatting. See [Slack Webhook Template](/guide/slack-webhook).
+- **Linear** — Issue creation with Markdown descriptions. See [Linear Webhook Template](/guide/linear-webhook).
+- **Jira** — Issue creation with Atlassian Document Format (ADF). See [Jira Webhook Template](/guide/jira-webhook).
 
 Quick setup:
 

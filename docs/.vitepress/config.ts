@@ -18,6 +18,8 @@ export default defineConfig({
           { text: 'MCP Integration', link: '/guide/mcp-integration' },
           { text: 'Webhooks', link: '/guide/webhooks' },
           { text: 'Slack Webhook Template', link: '/guide/slack-webhook' },
+          { text: 'Linear Webhook Template', link: '/guide/linear-webhook' },
+          { text: 'Jira Webhook Template', link: '/guide/jira-webhook' },
           { text: 'Nuxt Module', link: '/guide/nuxt-module' },
         ],
       },

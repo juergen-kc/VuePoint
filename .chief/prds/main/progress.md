@@ -642,3 +642,28 @@
   - The transformer pattern (pure function, no side effects) is reusable for Linear/Jira templates (US-036)
   - Pre-existing lint errors in `selector.test.ts` and `output.test.ts` are unrelated to new code
 ---
+
+## 2026-03-04 - US-036
+- Implemented Linear payload transformer (`toLinearIssue()`) in `packages/core/src/linear-transformer.ts`
+- Implemented Jira payload transformer (`toJiraIssue()`) in `packages/core/src/jira-transformer.ts` using Atlassian Document Format (ADF)
+- Both transformers follow the same pure-function pattern as the Slack transformer
+- Issue title derived from first sentence of feedback (max 80 chars)
+- Labels auto-applied: `vuepoint`, `ui-feedback` by default
+- Exported types and functions from `packages/core/src/index.ts`
+- Added documentation: `docs/guide/linear-webhook.md` and `docs/guide/jira-webhook.md`
+- Updated `docs/guide/webhooks.md` with integration templates section referencing all three
+- Updated VitePress sidebar config with new pages
+- Files changed:
+  - `packages/core/src/linear-transformer.ts` (new)
+  - `packages/core/src/jira-transformer.ts` (new)
+  - `packages/core/src/index.ts` (modified)
+  - `docs/guide/linear-webhook.md` (new)
+  - `docs/guide/jira-webhook.md` (new)
+  - `docs/guide/webhooks.md` (modified)
+  - `docs/.vitepress/config.ts` (modified)
+- **Learnings for future iterations:**
+  - Jira uses Atlassian Document Format (ADF) — a structured JSON format, NOT Markdown
+  - Linear API accepts Markdown descriptions — simpler than Jira
+  - Follow the Slack transformer pattern: pure function, typed options, typed output
+  - Export pattern: types with `type` keyword, functions directly from `index.ts`
+---
