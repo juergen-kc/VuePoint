@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "bin": {
+    "vuepoint": "./dist/cli.js",
     "vuepoint-mcp": "./dist/server.js"
   },
   "exports": {

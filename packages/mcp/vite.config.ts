@@ -3,9 +3,11 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   build: {
     lib: {
-      entry: 'src/server.ts',
+      entry: {
+        server: 'src/server.ts',
+        cli: 'src/cli.ts',
+      },
       formats: ['es'],
-      fileName: () => 'server.js',
     },
     rollupOptions: {
       external: [

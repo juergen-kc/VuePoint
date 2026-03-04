@@ -174,7 +174,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     switch (name) {
       case 'vuepoint_get_annotations': {
-        const { status = 'pending' } = (args ?? {}) as { status?: string }
+        const { status } = z
+          .object({
+            status: z
+              .enum(['pending', 'acknowledged', 'resolved', 'dismissed', 'all'])
+              .optional()
+              .default('pending'),
+          })
+          .parse(args ?? {})
         result = await bridgeRequest('GET', `/api/v1/annotations?status=${status}`)
         break
       }
@@ -225,10 +232,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'vuepoint_get_component_info': {
-        const { selector, name: componentName } = (args ?? {}) as {
-          selector?: string
-          name?: string
-        }
+        const { selector, name: componentName } = z
+          .object({
+            selector: z.string().optional(),
+            name: z.string().optional(),
+          })
+          .parse(args ?? {})
         const qs = selector
           ? `selector=${encodeURIComponent(selector)}`
           : `name=${encodeURIComponent(componentName ?? '')}`

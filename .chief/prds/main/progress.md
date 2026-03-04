@@ -289,3 +289,19 @@
   - The `matched` array on Vue Router's route contains route records with `components.default` — the deepest match is the page-level component
   - Component name resolution mirrors `useVueInspector`: `__name` → `name` → filename extraction from `__file`
 ---
+
+## 2026-03-04 - US-025
+- MCP server already had all 8 tools implemented from initial scaffold — verified end-to-end
+- Added Zod validation to `vuepoint_get_annotations` (status enum with default) and `vuepoint_get_component_info` (optional selector/name)
+- Created `cli.ts` — CLI entry point with `mcp` subcommand so `npx vuepoint mcp` works
+- Updated `vite.config.ts` to build both `server.js` and `cli.js` entry points
+- Added `vuepoint` bin entry in package.json alongside existing `vuepoint-mcp`
+- All 8 tools: get_annotations, get_annotation, acknowledge, resolve, dismiss, ask, get_component_info, get_app_context
+- All tools now use Zod for input validation
+- Typecheck and build pass clean
+- Files changed: server.ts (Zod additions), cli.ts (new), vite.config.ts (multi-entry), package.json (bin), prd.json, progress.md
+- **Learnings for future iterations:**
+  - Top-level `await` in a TS file without imports requires `export {}` to be treated as a module by TypeScript
+  - Vite multi-entry config uses `entry: { name: 'path' }` object instead of a single string
+  - The MCP SDK `@modelcontextprotocol/sdk` uses deep path imports (e.g., `/server/index.js`) which must be individually externalized in Vite
+---
