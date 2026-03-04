@@ -66,3 +66,18 @@
   - `useVueInspector` returns a composable factory pattern: call with options, get back bound functions — this is the project's preferred Vue composable style
   - The `__vueParentComponent` property is only present in Vue 3 dev builds — production guard in plugin.ts ensures VuePoint is never active in prod
 ---
+
+## 2026-03-04 - US-004
+- Verified existing `selector.ts` implementation meets all acceptance criteria
+- `generateSelector()`: walks up DOM building unique CSS path, stops at unique anchors (#id, [data-testid])
+- Priority chain: #id → [data-testid/data-cy/data-e2e/aria-label/name/role] → tag+classes → :nth-child()
+- MAX_DEPTH = 8, enforced in the walk loop
+- `describeElement()`: returns human-readable summary (text content, aria-label, input type, img alt)
+- Both functions already exported from `@vuepoint/core` barrel
+- Typecheck passes clean
+- Files changed: prd.json (mark passes), progress.md
+- **Learnings for future iterations:**
+  - `selector.ts` also filters dynamic classes (Tailwind JIT, CSS modules) via heuristics — skip classes >30 chars, starting with digit, or looking like hex hashes
+  - `CSS.escape()` is used for IDs to handle special characters
+  - Auto-generated IDs (`:r0:` pattern from React/frameworks) are excluded from the ID strategy
+---
