@@ -371,7 +371,7 @@ function submitAnnotation() {
   const el = pendingElement.value
   const chain = getComponentChain(el)
   const stores = props.options.pinia?.enabled
-    ? getComponentStores(chain, props.options.pinia.instance)
+    ? getComponentStores(el, props.options.pinia.instance)
     : undefined
 
   // Get current route if vue-router is present

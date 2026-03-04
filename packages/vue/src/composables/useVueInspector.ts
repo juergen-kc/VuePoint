@@ -45,6 +45,8 @@ interface VueInternalInstance {
   props: Record<string, unknown>
   /** App context — used to detect app root */
   appContext: unknown
+  /** Setup function return values — contains store refs, composable results, etc. */
+  setupState?: Record<string, unknown>
 }
 
 // ─── Augment Element for the Vue internal property ───────────────────────────
@@ -107,37 +109,65 @@ export function useVueInspector(options: UseVueInspectorOptions) {
   }
 
   /**
-   * Returns Pinia store IDs that are currently active in the app.
-   * Only used when Pinia opt-in is enabled.
+   * Returns Pinia store IDs that a specific component accesses by inspecting
+   * the setupState of each component instance in the chain from the clicked
+   * element up to the root.
    *
-   * We read from the Pinia instance passed in options rather than importing
-   * Pinia directly — this keeps Pinia as a true optional peer dep.
-   */
-  function getPiniaStoreIds(piniaInstance: unknown): string[] {
-    try {
-      // Pinia exposes _s (a Map of storeId → store) on its instance
-      const pinia = piniaInstance as { _s?: Map<string, unknown> }
-      if (!pinia._s) return []
-      return Array.from(pinia._s.keys())
-    } catch {
-      return []
-    }
-  }
-
-  /**
-   * Returns Pinia store IDs that a specific component instance accesses.
-   * This is best-effort — we check if the component's setup result contains
-   * any reactive properties that share IDs with known stores.
+   * Detection: Pinia stores have a `$id` property. We iterate each instance's
+   * setupState values and collect any that match known store IDs.
+   *
+   * Falls back to all active store IDs if setupState inspection yields nothing
+   * (e.g. stores accessed via provide/inject or global imports without binding).
    */
   function getComponentStores(
-    chain: VueComponentInfo[],
+    el: Element,
     piniaInstance: unknown
   ): string[] {
     if (!piniaInstance) return []
-    // For now, return all active store IDs for the leaf component.
-    // A more precise implementation would inspect setupState bindings —
-    // left as a Phase 2 enhancement.
-    return getPiniaStoreIds(piniaInstance)
+
+    const pinia = piniaInstance as { _s?: Map<string, unknown> }
+    if (!pinia._s || pinia._s.size === 0) return []
+
+    const knownStoreIds = new Set(pinia._s.keys())
+    const found = new Set<string>()
+
+    // Walk the DOM to find the Vue instance, then walk the instance chain
+    let domEl: Element | null = el
+    let instance: VueInternalInstance | null = null
+    while (domEl && !instance) {
+      if (domEl.__vueParentComponent) {
+        instance = domEl.__vueParentComponent
+      }
+      domEl = domEl.parentElement
+    }
+
+    while (instance) {
+      const setupState = instance.setupState
+      if (setupState) {
+        for (const key of Object.keys(setupState)) {
+          try {
+            const val = setupState[key]
+            if (val && typeof val === 'object' && '$id' in val) {
+              const storeId = (val as { $id: string }).$id
+              if (typeof storeId === 'string' && knownStoreIds.has(storeId)) {
+                found.add(storeId)
+              }
+            }
+          } catch {
+            // Skip non-enumerable or proxy-trapped values
+          }
+        }
+      }
+      instance = instance.parent
+    }
+
+    // Fallback: if no stores detected via setupState, return all active stores
+    // (handles edge cases like stores used via global imports without setup binding)
+    if (found.size === 0) {
+      return Array.from(knownStoreIds)
+    }
+
+    return Array.from(found)
   }
 
   return {

@@ -20,6 +20,7 @@
 - PrimeVue 4: `@primevue/themes` for presets, `Select` (not `Dropdown`), `ToggleSwitch` (not `InputSwitch`)
 - `getBoundingClientRect()` returns viewport-relative coords — compare with `clientX`/`clientY`, not `pageX`/`pageY`, for `position: fixed` overlays
 - Use `nextTick` in plugin `install()` to defer access to `$router` / Pinia — handles any plugin registration order
+- Pinia stores have `$id` property — use this to detect store references in Vue component `setupState`
 
 ---
 
@@ -450,4 +451,22 @@
   - The `reply` endpoint on the API is separate from `PATCH /annotations/:id` because the MCP agent's `vuepoint_ask` and the user's reply are conceptually different actors; using separate endpoints keeps authorization clearer
   - CSS `animation` (keyframes `vp-pulse`) on buttons creates visual urgency for unanswered questions without JavaScript polling
   - The question badge uses amber (#f59e0b) consistently across toolbar badge, panel question block border, reply button — semantic color for "needs attention"
+---
+
+## 2026-03-04 - US-021
+- Implemented per-component Pinia store resolution in `useVueInspector.ts`
+- `getComponentStores()` now accepts the DOM element (instead of the chain) and walks the Vue instance hierarchy inspecting `setupState` for Pinia store references
+- Detection: checks each setupState value for `$id` property matching known Pinia store IDs
+- Walks the full component chain (leaf → root) to catch stores used by ancestor components
+- Falls back to all active store IDs if setupState inspection yields nothing (backward compatibility)
+- Updated `VuePointToolbar.vue` to pass the element instead of the chain to `getComponentStores()`
+- Added `setupState` to `VueInternalInstance` type definition
+- Opt-in behavior preserved: only active when `VuePointOptions.pinia.enabled === true` and instance provided
+- Typecheck passes clean; build succeeds
+- Files changed: useVueInspector.ts (getComponentStores rewrite + setupState type), VuePointToolbar.vue (call site update), prd.json, progress.md
+- **Learnings for future iterations:**
+  - Pinia stores always have a `$id` property — this is the most reliable fingerprint for detecting store references in setupState
+  - Vue 3 `setupState` is only available on component instances in dev builds (same as `__vueParentComponent`) — production guard already ensures VuePoint is never active in prod
+  - Walking the full instance chain (not just the leaf) is important because parent components often fetch data via stores that children render
+  - The fallback to all stores ensures no regression for edge cases (stores via provide/inject, global imports without binding)
 ---
