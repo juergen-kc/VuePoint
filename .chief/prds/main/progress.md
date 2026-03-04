@@ -14,6 +14,8 @@
 - Build: `packages/vue/tsconfig.build.json` with empty `paths: {}` prevents DTS from following `@vuepoint/core` source
 - Build: MCP and API packages are ESM-only (no CJS) since they're Node.js CLI entry points
 - Build: `exports` field in package.json must list `types` before `import`/`require`
+- pnpm `--filter` uses the package `name` field, not the directory name (e.g., `--filter vuepoint-playground`)
+- PrimeVue 4: `@primevue/themes` for presets, `Select` (not `Dropdown`), `ToggleSwitch` (not `InputSwitch`)
 
 ---
 
@@ -223,4 +225,27 @@
   - Using `var(--token, fallback)` in child components ensures they work standalone even if parent vars aren't set
   - Theme-agnostic colors (status badges, red delete) should NOT be tokenized — they're semantic constants
   - `localStorage` + `prefers-color-scheme` is the standard detect-then-persist pattern; stored value always takes priority over system preference
+---
+
+## 2026-03-04 - US-014
+- Created full playground Vue 3 + Vite app with PrimeVue 4, Pinia, and Vue Router
+- Package: `vuepoint-playground` with `pnpm dev` (Vite dev server on :5173)
+- PrimeVue configured with Aura theme preset, using DataTable, Column, Button, Dialog, InputText, Tag, ToggleSwitch, Select components
+- VuePoint installed via workspace link (`@vuepoint/vue: workspace:*`) with Pinia integration enabled
+- Pinia store: `useUsersStore` with sample user data (5 users), search/filter, CRUD operations
+- Three routes: Home (/), Users (/users), Settings (/settings) — tests route context capture
+- UsersView: DataTable with search, add user dialog, status toggle, delete — realistic PrimeVue CRUD
+- SettingsView: Form with InputText, Select, ToggleSwitch — demonstrates form component annotation
+- HomeView: Landing page with feature cards
+- App.vue: Header with navigation buttons, router-view
+- Fixed root package.json `dev` script filter: `--filter vuepoint-playground` (pnpm uses package name, not directory name)
+- Updated root tsconfig.json to include playground/src in typecheck
+- `pnpm dev` starts with hot reload, `pnpm typecheck` passes clean
+- Files changed: playground/ (9 new files: package.json, index.html, vite.config.ts, tsconfig.json, env.d.ts, main.ts, router.ts, stores/users.ts, App.vue + 3 views), root package.json, root tsconfig.json, pnpm-lock.yaml, prd.json, progress.md
+- **Learnings for future iterations:**
+  - pnpm `--filter` uses the package `name` field, not the directory name — `--filter vuepoint-playground`, not `--filter playground`
+  - PrimeVue 4 uses `@primevue/themes` package for presets (Aura, Lara, etc.) instead of the old `primevue/themes` path
+  - PrimeVue 4 component names changed: `Dropdown` → `Select`, `InputSwitch` → `ToggleSwitch`
+  - Playground tsconfig should extend `tsconfig.base.json` to get the `@vuepoint/*` path aliases for source-level dev
+  - `vue-tsc` is the proper typecheck tool for Vue SFCs but the root `tsc --noEmit` with `.vue` shims works for the monorepo typecheck
 ---
