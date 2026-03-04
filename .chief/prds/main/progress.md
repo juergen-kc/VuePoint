@@ -81,3 +81,18 @@
   - `CSS.escape()` is used for IDs to handle special characters
   - Auto-generated IDs (`:r0:` pattern from React/frameworks) are excluded from the ID strategy
 ---
+
+## 2026-03-04 - US-005
+- Verified existing `output.ts` implementation meets all acceptance criteria
+- `formatAnnotation()`: outputs structured Markdown with Element, Selector, Component chain, SFC Path, Pinia Stores, Route, Feedback, Expected, Actual
+- `formatAnnotationBatch()`: formats multiple annotations with `### Annotation [id]` headers and `---` separators, filters to pending only
+- Optional fields (expected, actual, piniaStores) conditionally omitted when empty/undefined
+- Output uses `**Key:** \`value\`` format — greppable and machine-parseable
+- Both functions already exported from `@vuepoint/core` barrel
+- Typecheck passes clean
+- Files changed: prd.json (mark passes), progress.md
+- **Learnings for future iterations:**
+  - `formatAnnotationBatch` only outputs `pending` annotations — resolved/dismissed are excluded from batch copy
+  - The output format also supports opt-in fields via `MarkdownOutputOptions`: `includeScreenshot` and `includeProps`
+  - `generateId()` and `now()` utility functions are co-located in output.ts for annotation creation
+---
