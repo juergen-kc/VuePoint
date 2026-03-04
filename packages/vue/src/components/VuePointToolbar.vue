@@ -172,6 +172,7 @@ onUnmounted(() => {
   document.removeEventListener('vuepoint:toggle', handleToggle)
   document.removeEventListener('selectionchange', checkTextSelection)
   exitAnnotationMode()
+  removePauseStyle()
 })
 
 // ─── Event handlers ───────────────────────────────────────────────────────────
@@ -453,6 +454,30 @@ function cancelAnnotation() {
   isExpanded.value = false
 }
 
+// ─── Animation pause ──────────────────────────────────────────────────────────
+
+const animationsPaused = ref(false)
+let pauseStyleEl: HTMLStyleElement | null = null
+
+function toggleAnimationPause() {
+  animationsPaused.value = !animationsPaused.value
+  if (animationsPaused.value) {
+    pauseStyleEl = document.createElement('style')
+    pauseStyleEl.setAttribute('data-vuepoint-pause', '')
+    pauseStyleEl.textContent = '* { animation-play-state: paused !important; transition: none !important; }'
+    document.head.appendChild(pauseStyleEl)
+  } else {
+    removePauseStyle()
+  }
+}
+
+function removePauseStyle() {
+  if (pauseStyleEl) {
+    pauseStyleEl.remove()
+    pauseStyleEl = null
+  }
+}
+
 // ─── Copy all ─────────────────────────────────────────────────────────────────
 
 const copied = ref(false)
@@ -630,6 +655,21 @@ function getCurrentRoute(): string | undefined {
           <path d="M17 10H3"/><path d="M21 6H3"/><path d="M21 14H3"/><path d="M17 18H3"/>
         </svg>
         Annotate Selection
+      </button>
+
+      <!-- Pause animations toggle -->
+      <button
+        class="vp-icon-btn"
+        :class="{ 'vp-icon-btn--active': animationsPaused }"
+        :title="animationsPaused ? 'Resume animations' : 'Pause animations'"
+        @click="toggleAnimationPause"
+      >
+        <svg v-if="!animationsPaused" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+        </svg>
+        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
       </button>
 
       <!-- Theme toggle -->
@@ -820,6 +860,7 @@ function getCurrentRoute(): string | undefined {
   transition: color 0.15s, background 0.15s;
 }
 .vp-icon-btn:hover { color: var(--vp-text); background: var(--vp-bg-hover); }
+.vp-icon-btn--active { color: #f59e0b; border-color: #f59e0b; }
 
 /* ── Feedback modal ──────────────────────────────────────────────────────── */
 .vp-feedback-modal {

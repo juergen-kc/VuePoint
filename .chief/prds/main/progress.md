@@ -399,3 +399,18 @@
   - Text annotations use a distinct purple color (#7c3aed) to visually distinguish them from element (blue) and area (orange) annotation types
   - `sel.removeAllRanges()` clears the browser's text selection after capture to avoid visual confusion with the persistent highlight marker
 ---
+
+## 2026-03-04 - US-018
+- Added "Pause Animations" toggle button to the toolbar (between annotate and theme toggle)
+- Injects a `<style data-vuepoint-pause>` element into `document.head` with `* { animation-play-state: paused !important; transition: none !important; }`
+- Toggling off removes the style element, restoring original animation state
+- Button shows pause icon (two bars) when animations are running, play icon (triangle) when paused
+- Active state highlighted with amber (#f59e0b) border and icon color
+- Style element cleaned up on component unmount via `removePauseStyle()`
+- Typecheck passes clean
+- Files changed: VuePointToolbar.vue (script: pause state + toggle + cleanup, template: pause button, styles: active state), prd.json, progress.md
+- **Learnings for future iterations:**
+  - Injecting a `<style>` element is better than setting `document.body.style` for animation pausing because it catches pseudo-elements, keyframe animations, and nested shadow DOM (with `!important`)
+  - Use a `data-*` attribute on the injected style element for easy identification and cleanup
+  - Storing the style element reference in a module-level `let` (not a `ref`) avoids unnecessary reactivity for DOM elements that don't need to trigger re-renders
+---
