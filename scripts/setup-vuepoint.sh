@@ -52,3 +52,39 @@ fi
 ok "CodeArtifact registry: $JC_REGISTRY"
 
 echo ""
+
+# ── Phase 2: Download tarballs ────────────────────────────────────────────────
+info "Downloading VuePoint ${VUEPOINT_VERSION} tarballs..."
+
+mkdir -p "$TARBALL_DIR"
+
+# Check if tarballs already exist
+ALL_PRESENT=true
+for tb in "${TARBALLS[@]}"; do
+  [[ -f "$TARBALL_DIR/$tb" ]] || ALL_PRESENT=false
+done
+
+if $ALL_PRESENT; then
+  skip "Tarballs already downloaded in $TARBALL_DIR/"
+else
+  gh release download "$VUEPOINT_VERSION" \
+    --repo "$VUEPOINT_REPO" \
+    --dir "$TARBALL_DIR" \
+    --pattern '*.tgz' \
+    --clobber \
+    || fail "Failed to download tarballs. Check: gh auth status, repo access, release exists."
+
+  # Verify all expected tarballs arrived
+  for tb in "${TARBALLS[@]}"; do
+    [[ -f "$TARBALL_DIR/$tb" ]] || fail "Missing tarball: $tb (check GitHub Release assets)"
+  done
+  ok "Downloaded ${#TARBALLS[@]} tarballs to $TARBALL_DIR/"
+fi
+
+# Gitignore the temp dir
+if [[ -f .gitignore ]] && ! grep -q "^\.vuepoint" .gitignore; then
+  echo ".vuepoint/" >> .gitignore
+  ok "Added .vuepoint/ to .gitignore"
+fi
+
+echo ""
