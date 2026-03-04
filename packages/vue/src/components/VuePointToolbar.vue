@@ -12,7 +12,9 @@
  *   - All VuePoint DOM is data-vuepoint="true" so the inspector can skip it
  */
 
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, defineOptions } from 'vue'
+
+defineOptions({ name: 'VuePointToolbar' })
 import type { VuePointOptions } from '@vuepoint/core'
 import {
   generateSelector,
@@ -160,6 +162,16 @@ async function copyAll() {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+function highlightStyle(el: Element): Record<string, string> {
+  const rect = el.getBoundingClientRect()
+  return {
+    top: `${rect.top + window.scrollY}px`,
+    left: `${rect.left + window.scrollX}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+  }
+}
+
 function getCurrentRoute(): string | undefined {
   // Read from vue-router if available on window (non-invasive)
   try {
@@ -276,22 +288,6 @@ function getCurrentRoute(): string | undefined {
   </div>
 </template>
 
-<script lang="ts">
-// Separate non-setup script for the highlight style helper
-// (avoids template expression complexity)
-import { defineComponent } from 'vue'
-export default defineComponent({ name: 'VuePointToolbar' })
-
-export function highlightStyle(el: Element): Record<string, string> {
-  const rect = el.getBoundingClientRect()
-  return {
-    top: `${rect.top + window.scrollY}px`,
-    left: `${rect.left + window.scrollX}px`,
-    width: `${rect.width}px`,
-    height: `${rect.height}px`,
-  }
-}
-</script>
 
 <style scoped>
 /* ── Reset & scope ───────────────────────────────────────────────────────── */

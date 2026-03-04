@@ -9,6 +9,7 @@
 - `vite` devDep needed in packages/vue for `import.meta.env` types
 - `@types/node` at root for `process.env` in plugin.ts production guard
 - Many US stories may already have working implementations from the original 11 source files — verify before writing new code
+- Vue SFC: only `<script setup>` bindings are template-accessible; use `defineOptions({ name })` instead of a separate `<script>` block
 - Build: `vite-plugin-dts` (with `rollupTypes: true`) for declaration bundling; `@vitejs/plugin-vue` for SFC compilation
 - Build: `packages/vue/tsconfig.build.json` with empty `paths: {}` prevents DTS from following `@vuepoint/core` source
 - Build: MCP and API packages are ESM-only (no CJS) since they're Node.js CLI entry points
@@ -140,4 +141,17 @@
   - The isolated app pattern (`createApp` + separate mount point) is how VuePoint avoids contaminating the host app's component tree — important for annotation accuracy
   - `registerShortcut()` supports ctrl/meta/shift/alt modifiers and prevents default on match
   - The `__VUE__` global is only present in Vue dev builds — plugin warns if missing
+---
+
+## 2026-03-04 - US-009
+- Verified existing VuePointToolbar.vue implementation covers full click-to-annotate flow
+- Fixed runtime bug: `highlightStyle()` was in a separate `<script>` block (not accessible to `<script setup>` template), moved into `<script setup>`
+- Replaced separate `<script>` block's `defineComponent({ name })` with `defineOptions({ name: 'VuePointToolbar' })` in `<script setup>`
+- All acceptance criteria met: FAB button, annotate mode with crosshair cursor, hover highlight, click capture (selector/chain/SFC/route), feedback modal, store creation, annotation markers (stub), Copy All to clipboard, keyboard shortcut toggle
+- Typecheck passes clean
+- Files changed: VuePointToolbar.vue (bug fix + modernization), prd.json, progress.md
+- **Learnings for future iterations:**
+  - In Vue 3 SFCs with both `<script setup>` and `<script>`, only `<script setup>` bindings are available in the template — functions in the regular `<script>` block are module exports, not template bindings
+  - `defineOptions({ name })` (Vue 3.3+) replaces the need for a separate `<script>` block when you only need to set the component name
+  - `tsc --noEmit` with `.vue` shims doesn't catch template binding errors — consider vue-tsc for deeper SFC checking
 ---
