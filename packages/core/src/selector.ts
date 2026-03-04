@@ -69,14 +69,16 @@ function segmentFor(el: Element): string {
 
 export function generateSelector(target: Element): string {
   const segments: string[] = []
+  const elements: Element[] = []
   let el: Element | null = target
 
   for (let depth = 0; el && depth < MAX_DEPTH; depth++) {
     const seg = segmentFor(el)
     segments.unshift(seg)
+    elements.unshift(el)
 
     const candidate = segments.join(' > ')
-    if (isUnique(candidate)) break
+    if (isUnique(candidate)) return candidate
 
     // If we hit a unique anchor (ID or data-testid), stop climbing
     if (seg.startsWith('#') || seg.includes('[data-')) break
@@ -84,7 +86,16 @@ export function generateSelector(target: Element): string {
     el = el.parentElement
   }
 
-  return segments.join(' > ')
+  // Final selector not unique — progressively replace segments with
+  // nth-child variants (from target upward) until unique
+  const result = [...segments]
+  for (let i = result.length - 1; i >= 0; i--) {
+    result[i] = nthChild(elements[i])
+    const candidate = result.join(' > ')
+    if (isUnique(candidate)) return candidate
+  }
+
+  return result.join(' > ')
 }
 
 /**

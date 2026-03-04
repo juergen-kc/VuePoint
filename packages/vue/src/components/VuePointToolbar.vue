@@ -379,10 +379,16 @@ function handleDocumentClick(e: MouseEvent) {
   e.preventDefault()
   e.stopPropagation()
 
+  // Capture the element before cleanup — exitAnnotationMode clears pendingElement
+  const captured = target
   multiSelectElements.value = []
-  pendingElement.value = target
-  mode.value = 'panel'
+
+  // Clean up annotation mode listeners and cursor
   exitAnnotationMode()
+
+  // Restore captured state for the feedback panel
+  pendingElement.value = captured
+  mode.value = 'panel'
 }
 
 function handleMouseMove(e: MouseEvent) {
@@ -693,10 +699,10 @@ function getCurrentRoute(): string | undefined {
       </div>
     </Transition>
 
-    <!-- Annotation list panel -->
+    <!-- Annotation list panel (hidden while feedback form is active) -->
     <Transition name="vp-slide">
       <AnnotationPanel
-        v-if="isExpanded && mode === 'panel'"
+        v-if="isExpanded && mode === 'panel' && !pendingElement"
         :store="annotationsStore"
         @close="isExpanded = false; mode = 'idle'"
         @reply-question="handleReplyQuestion"
