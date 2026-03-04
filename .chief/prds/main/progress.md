@@ -547,3 +547,20 @@
   - The `docs:dev` script is simply `vitepress dev docs` — no workspace filter needed since docs is not a package
   - Screenshot/GIF demos noted as acceptance criteria but require actual running app captures — placeholder text descriptions used instead
 ---
+
+## 2026-03-04 - US-031
+- Created dedicated "For PMs & Designers" guide page at `docs/guide/for-pms-and-designers.md`
+- Step-by-step workflow: open staging URL → activate toolbar → annotate elements → copy output → paste to AI agent
+- No terminal commands or code editor steps anywhere in the guide
+- Created 5 SVG illustration diagrams in `docs/public/images/` showing: FAB button, expanded toolbar, element highlighting, feedback form, and annotation panel
+- Added FAQ section covering 8 common questions (installation, production, browsers, mobile, missing button, agent feedback, multiplayer, status tracking)
+- Included additional annotation modes section (multi-select, area select, text select)
+- Added tips and best practices section for effective annotations
+- Added page to VitePress sidebar between "Getting Started" and "Configuration"
+- `pnpm typecheck` passes, `pnpm docs:build` succeeds
+- Files changed: `docs/guide/for-pms-and-designers.md` (new), `docs/.vitepress/config.ts`, 5 SVG files in `docs/public/images/`, `prd.json`
+- **Learnings for future iterations:**
+  - VitePress serves files from `docs/public/` at the root path — images at `docs/public/images/foo.svg` are referenced as `/images/foo.svg` in markdown
+  - SVG illustrations work well as documentation screenshots since they're lightweight, scalable, and version-control friendly
+  - VitePress `::: tip` and `::: info` containers provide callout boxes for prerequisites and explanations
+---

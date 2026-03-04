@@ -13,6 +13,7 @@ export default defineConfig({
         text: 'Guide',
         items: [
           { text: 'Getting Started', link: '/guide/getting-started' },
+          { text: 'For PMs & Designers', link: '/guide/for-pms-and-designers' },
           { text: 'Configuration', link: '/guide/configuration' },
           { text: 'MCP Integration', link: '/guide/mcp-integration' },
           { text: 'Webhooks', link: '/guide/webhooks' },

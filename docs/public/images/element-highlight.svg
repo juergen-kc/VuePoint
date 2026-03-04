@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200">
+  <rect width="400" height="200" rx="8" fill="#f8f9fa" stroke="#dee2e6" stroke-width="1"/>
+  <!-- Simulated page content -->
+  <rect x="30" y="30" width="340" height="40" rx="4" fill="#e5e7eb"/>
+  <text x="200" y="55" text-anchor="middle" fill="#6b7280" font-size="12" font-family="system-ui">Navigation Bar</text>
+  <!-- Highlighted button -->
+  <rect x="130" y="100" width="140" height="42" rx="6" fill="#3b82f6" opacity="0.15" stroke="#3b82f6" stroke-width="2"/>
+  <rect x="135" y="105" width="130" height="32" rx="4" fill="#6366f1"/>
+  <text x="200" y="126" text-anchor="middle" fill="white" font-size="13" font-family="system-ui">Save Changes</text>
+  <!-- Cursor -->
+  <text x="180" y="90" fill="#3b82f6" font-size="20" font-family="system-ui">⊕</text>
+  <!-- Label -->
+  <text x="200" y="170" text-anchor="middle" fill="#3b82f6" font-size="11" font-family="system-ui" font-weight="bold">Element highlighted on hover</text>
+</svg>
