@@ -10,5 +10,8 @@
     "playground/src/**/*.ts",
     "playground/src/**/*.d.ts",
     "playground/src/**/*.vue"
+  ],
+  "exclude": [
+    "packages/nuxt/src/runtime/**"
   ]
 }

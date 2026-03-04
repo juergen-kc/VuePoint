@@ -1,2 +1,2 @@
-// Nuxt module — @jumpcloud/nuxt-vuepoint (US-029)
-export {}
+export { default } from './module'
+export type { ModuleOptions } from './module'

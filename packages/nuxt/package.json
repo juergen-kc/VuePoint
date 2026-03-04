@@ -3,14 +3,30 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.mts",
+      "import": "./dist/module.mjs"
+    }
+  },
+  "main": "./dist/module.mjs",
+  "types": "./dist/types.d.mts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "echo 'nuxt module configured in US-029'",
+    "build": "nuxt-module-build build",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@nuxt/kit": "^3.14.0",
+    "@vuepoint/core": "workspace:*",
     "@vuepoint/vue": "workspace:*"
   },
   "devDependencies": {
+    "@nuxt/module-builder": "^0.8.0",
+    "@nuxt/schema": "^4.3.1",
+    "nuxt": "^3.14.0",
     "typescript": "^5.7.0"
   }
 }

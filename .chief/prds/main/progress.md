@@ -19,6 +19,7 @@
 - pnpm `--filter` uses the package `name` field, not the directory name (e.g., `--filter vuepoint-playground`)
 - PrimeVue 4: `@primevue/themes` for presets, `Select` (not `Dropdown`), `ToggleSwitch` (not `InputSwitch`)
 - `getBoundingClientRect()` returns viewport-relative coords — compare with `clientX`/`clientY`, not `pageX`/`pageY`, for `position: fixed` overlays
+- Nuxt runtime plugins use `#imports` virtual module — exclude `packages/nuxt/src/runtime/**` from root tsconfig
 - Use `nextTick` in plugin `install()` to defer access to `$router` / Pinia — handles any plugin registration order
 - Pinia stores have `$id` property — use this to detect store references in Vue component `setupState`
 
@@ -510,4 +511,24 @@
   - `shallowRef` is better than `ref` for arrays that get replaced entirely (like delivery logs) — avoids deep reactivity overhead on objects that don't need individual property tracking
   - Delivery log should be capped both server-side (200) and UI-side (50) to prevent memory growth in long-running sessions
   - `deliverWebhookTracked` wraps the raw delivery function to separate concerns: the raw function returns status details, the tracked wrapper logs and broadcasts
+---
+
+## 2026-03-04 - US-029
+- Implemented Nuxt 3 module (`@jumpcloud/nuxt-vuepoint`) in `packages/nuxt/`
+- Created `module.ts` with `defineNuxtModule` — configKey `vuepoint`, production guard via `nuxt.options.dev === false`
+- Created `runtime/plugin.ts` — Nuxt runtime plugin (`defineNuxtPlugin`) that installs VuePoint on `nuxtApp.vueApp`
+- Module passes all options through `runtimeConfig.public.vuepoint` to the runtime plugin
+- Plugin runs client-side only (`mode: 'client'`) with `enforce: 'post'` to ensure router/pinia install first
+- Nuxt route metadata (layout, middleware) captured via VuePoint's existing context sync (Vue Router `afterEach` in plugin.ts)
+- Production guard: module `setup()` early-returns when `nuxt.options.dev === false` unless `enabled: true` is explicitly set
+- Build uses `nuxt-module-build` (standard Nuxt module tooling) — outputs `dist/module.mjs` + `dist/runtime/plugin.js`
+- Root tsconfig excludes `packages/nuxt/src/runtime/**` since `#imports` is a Nuxt virtual module
+- Typecheck passes clean; build succeeds
+- Files changed: packages/nuxt/ (module.ts, runtime/plugin.ts, index.ts, package.json, tsconfig.json), tsconfig.json (exclude runtime), pnpm-lock.yaml, prd.json, progress.md
+- **Learnings for future iterations:**
+  - Nuxt runtime plugins use virtual module aliases (`#imports`, `#app`) that can't resolve outside Nuxt's build — exclude from root tsconfig
+  - `defineNuxtModule` return type references `@nuxt/schema` — need explicit type annotation or `@nuxt/schema` devDep to avoid TS2742
+  - `nuxt-module-build` is the standard build tool for Nuxt modules — handles both module code and runtime code separately
+  - `enforce: 'post'` on the Nuxt plugin ensures VuePoint installs after router and Pinia plugins
+  - Nuxt's `runtimeConfig.public` is the bridge between build-time module options and runtime plugin access
 ---
