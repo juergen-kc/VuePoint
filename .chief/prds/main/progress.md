@@ -688,3 +688,18 @@
   - The export endpoint accepts `format` query param (json/markdown/csv) and `status` filter
   - Dashboard is at port 3743 to avoid conflicts with API (3742) and bridge (3741)
 ---
+
+## 2026-03-04 - US-038
+- Created `vite-plugin-vuepoint` package in `packages/vite-plugin/`
+- Vite plugin auto-injects `app.use(VuePoint)` into Vue 3 entry files without modifying main.ts
+- Uses Vite `transform` hook to detect `createApp()` calls and inject VuePoint before `.mount()`
+- `apply: 'serve'` ensures plugin only runs in dev mode (production guard)
+- Configurable entry pattern (defaults to `/main|entry|app/` files) and VuePointOptions pass-through
+- Files created: `packages/vite-plugin/package.json`, `packages/vite-plugin/tsconfig.json`, `packages/vite-plugin/vite.config.ts`, `packages/vite-plugin/src/index.ts`
+- Files modified: `.chief/prds/main/prd.json` (US-038 passes: true)
+- **Learnings for future iterations:**
+  - `VuePointOptions` is exported from `@vuepoint/core`, not `@vuepoint/vue`
+  - Vite plugin `apply: 'serve'` is the cleanest production guard — avoids injecting in build mode entirely
+  - The `transform` hook with regex is simpler than AST parsing for this use case — `createApp` pattern is reliable
+  - `packages/*/src/**/*.ts` glob in root tsconfig already covers new packages — no tsconfig changes needed
+---

@@ -186,6 +186,22 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
+  packages/vite-plugin:
+    dependencies:
+      '@vuepoint/core':
+        specifier: workspace:*
+        version: link:../core
+      '@vuepoint/vue':
+        specifier: workspace:*
+        version: link:../vue
+    devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.1(@types/node@22.19.13)(jiti@2.6.1)(terser@5.46.0)(yaml@2.8.2)
+
   packages/vue:
     dependencies:
       '@vuepoint/bridge':
