@@ -321,3 +321,20 @@
   - CSV escaping: wrap in double quotes if value contains comma, quote, or newline; double-escape internal quotes
   - Fastify route handlers can be shared as function references — `app.get('/a', handler); app.get('/b', handler)` avoids duplication
 ---
+
+## 2026-03-04 - US-027
+- Webhook engine was ~90% implemented from initial scaffold — applied targeted fixes to complete all 8 event types
+- Added `session.started` webhook fire on API server boot (after `app.listen`)
+- Added `session.ended` webhook fire on graceful shutdown (SIGINT/SIGTERM handlers)
+- Added `POST /api/v1/webhooks/batch-copied` endpoint for browser to trigger `annotation.batch_copied` event after clipboard copy
+- Fixed `POST /api/v1/webhooks/test` to look up configured webhook's secret for HMAC signing (was passing `undefined`)
+- Verified all 8 events: annotation.created/updated/acknowledged/resolved/dismissed fired on CRUD, batch_copied via new endpoint, session.started/ended on lifecycle
+- HMAC-SHA256 signing, retry with exponential backoff (1s→5s→30s), webhook filtering by event type all already working
+- Typecheck passes clean; build succeeds
+- Files changed: api.ts (session lifecycle events, batch_copied endpoint, test endpoint secret fix), prd.json, progress.md
+- **Learnings for future iterations:**
+  - The initial scaffold often has 80-95% of functionality — always verify existing code against AC before writing new code
+  - Session lifecycle events need to be fired AFTER server is listening (not during setup) to avoid race conditions
+  - Process signal handlers (`SIGINT`/`SIGTERM`) should `await` async cleanup before `process.exit()` to ensure webhook delivery completes
+  - The test webhook endpoint should use the configured secret for the target URL — otherwise test deliveries won't match production HMAC signatures
+---
