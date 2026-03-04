@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@vuepoint/core": "workspace:*"
+    "@vuepoint/core": "workspace:*",
+    "@vuepoint/bridge": "workspace:*"
   },
   "peerDependencies": {
     "vue": "^3.4.0"

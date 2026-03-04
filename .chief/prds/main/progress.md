@@ -9,6 +9,8 @@
 - `vite` devDep needed in packages/vue for `import.meta.env` types
 - `@types/node` at root for `process.env` in plugin.ts production guard
 - Many US stories may already have working implementations from the original 11 source files — verify before writing new code
+- Bridge architecture: Browser tabs → SharedWorker (postMessage) → API server (fetch) ← MCP server (HTTP); API pushes back via WebSocket → SharedWorker → tabs
+- Use `_bridgeSyncing` flag pattern to prevent infinite sync loops between local store mutations and bridge events
 - Vue SFC: only `<script setup>` bindings are template-accessible; use `defineOptions({ name })` instead of a separate `<script>` block
 - Build: `vite-plugin-dts` (with `rollupTypes: true`) for declaration bundling; `@vitejs/plugin-vue` for SFC compilation
 - Build: `packages/vue/tsconfig.build.json` with empty `paths: {}` prevents DTS from following `@vuepoint/core` source
@@ -248,4 +250,24 @@
   - PrimeVue 4 component names changed: `Dropdown` → `Select`, `InputSwitch` → `ToggleSwitch`
   - Playground tsconfig should extend `tsconfig.base.json` to get the `@vuepoint/*` path aliases for source-level dev
   - `vue-tsc` is the proper typecheck tool for Vue SFCs but the root `tsc --noEmit` with `.vue` shims works for the monorepo typecheck
+---
+
+## 2026-03-04 - US-023
+- Implemented SharedWorker bridge for browser ↔ Node.js state sync
+- Created `packages/bridge/src/types.ts` — message protocol (BridgeCommand, BridgeEvent, AppContext)
+- Created `packages/bridge/src/worker.ts` — SharedWorker that holds canonical annotation state, broadcasts to all tabs, syncs to API server via fetch(), receives API updates via WebSocket
+- Created `packages/bridge/src/client.ts` — browser-side client with typed API (connect, syncAnnotation, updateAnnotation, removeAnnotation, clearAnnotations, updateContext, onEvent)
+- Updated `packages/bridge/src/index.ts` — exports client and types
+- Added WebSocket support to `packages/api/src/api.ts` — `@fastify/websocket` plugin, `/ws` endpoint, `broadcastWs()` on PATCH and DELETE to push MCP agent updates to browser
+- Wired bridge client into `packages/vue/src/plugin.ts` — monkey-patches annotation store methods to sync to bridge, listens for events from other tabs
+- Added `_bridgeSyncing` flag to prevent infinite loops when receiving events from other tabs
+- Updated package.json files: bridge (exports), vue (+@vuepoint/bridge dep), api (+@fastify/websocket dep, +@types/ws devDep)
+- `pnpm typecheck` passes clean; `pnpm build` succeeds
+- Files changed: 7 new/modified files in bridge/, 2 modified in api/, 2 modified in vue/, prd.json, progress.md, pnpm-lock.yaml
+- **Learnings for future iterations:**
+  - SharedWorker `self.addEventListener('connect')` type needs manual declaration because `WebWorker` lib conflicts with `DOM` lib in the root tsconfig
+  - `@fastify/websocket` uses `ws` under the hood — import `type { WebSocket } from 'ws'` for the socket type in handlers
+  - Bridge sync needs a re-entrancy guard (`_bridgeSyncing`) to prevent store.create → bridge.sync → bridge.onEvent → store.create infinite loops
+  - SharedWorker constructor needs `{ type: 'module' }` option when the worker uses ES module imports
+  - `import.meta.url` in the bridge client auto-resolves the worker.js URL relative to the client module — Vite handles this in dev
 ---

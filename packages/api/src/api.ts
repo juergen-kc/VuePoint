@@ -14,8 +14,10 @@
  */
 
 import Fastify from 'fastify'
+import fastifyWebsocket from '@fastify/websocket'
 import cors from '@fastify/cors'
 import crypto from 'node:crypto'
+import type { WebSocket } from 'ws'
 import type {
   Annotation,
   WebhookConfig,
@@ -50,9 +52,35 @@ const appMeta = {
 
 const app = Fastify({ logger: false })
 
+await app.register(fastifyWebsocket)
 await app.register(cors, {
   origin: CORS_ORIGINS,
   methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+})
+
+// ─── WebSocket clients ──────────────────────────────────────────────────────
+
+const wsClients = new Set<WebSocket>()
+
+function broadcastWs(data: Record<string, unknown>): void {
+  const msg = JSON.stringify(data)
+  for (const ws of wsClients) {
+    try {
+      if (ws.readyState === 1) { // OPEN
+        ws.send(msg)
+      }
+    } catch {
+      wsClients.delete(ws)
+    }
+  }
+}
+
+app.register(async (fastify) => {
+  fastify.get('/ws', { websocket: true }, (socket) => {
+    wsClients.add(socket)
+    socket.on('close', () => wsClients.delete(socket))
+    socket.on('error', () => wsClients.delete(socket))
+  })
 })
 
 // Auth middleware
@@ -145,6 +173,9 @@ app.patch('/api/v1/annotations/:id', async (req, reply) => {
 
   annotationStore.set(id, updated)
 
+  // Push update to connected WebSocket clients (browser tabs via bridge)
+  broadcastWs({ type: 'annotation_updated', annotation: updated })
+
   const eventMap: Partial<Record<string, WebhookEvent>> = {
     acknowledged: 'annotation.acknowledged',
     resolved: 'annotation.resolved',
@@ -160,6 +191,7 @@ app.delete('/api/v1/annotations/:id', async (req, reply) => {
   const { id } = req.params as { id: string }
   if (!annotationStore.has(id)) return reply.status(404).send({ error: 'Not found' })
   annotationStore.delete(id)
+  broadcastWs({ type: 'annotation_removed', id })
   reply.status(204).send()
 })
 

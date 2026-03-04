@@ -335,7 +335,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-024",

@@ -3,8 +3,18 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./worker": {
+      "types": "./src/worker.ts",
+      "import": "./src/worker.ts"
+    }
+  },
   "scripts": {
-    "build": "echo 'bridge build configured in US-023'",
+    "build": "echo 'bridge is source-only for now'",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -16,6 +16,8 @@ import type { App, Plugin } from 'vue'
 import type { VuePointOptions } from '@vuepoint/core'
 import { buildFilter } from '@vuepoint/core'
 import { useAnnotationsStore, VUEPOINT_ANNOTATIONS_KEY } from './composables/useAnnotations.js'
+import { createBridgeClient } from '@vuepoint/bridge'
+import type { BridgeEvent } from '@vuepoint/bridge'
 import VuePointToolbar from './components/VuePointToolbar.vue'
 
 export const VUEPOINT_OPTIONS_KEY = Symbol('vuepoint:options')
@@ -51,6 +53,94 @@ const VuePoint: Plugin<VuePointOptions | undefined> = {
 
     app.provide(VUEPOINT_ANNOTATIONS_KEY, annotationsStore)
     app.provide(VUEPOINT_OPTIONS_KEY, { ...options, filterSet })
+
+    // ── Bridge — multi-tab sync + API server ──────────────────────────────
+    const bridge = createBridgeClient()
+    bridge.connect()
+
+    // Forward local annotation events to the bridge
+    const origCreate = annotationsStore.create.bind(annotationsStore)
+    const origUpdate = annotationsStore.update.bind(annotationsStore)
+    const origRemove = annotationsStore.remove.bind(annotationsStore)
+    const origClear = annotationsStore.clear.bind(annotationsStore)
+
+    // Monkey-patch store methods to sync to bridge
+    // Using Object.assign to extend the store with bridge-aware versions
+    const patchedStore = annotationsStore as typeof annotationsStore & { _bridgeSyncing?: boolean }
+
+    const wrappedCreate: typeof origCreate = (input) => {
+      const ann = origCreate(input)
+      if (!patchedStore._bridgeSyncing) {
+        bridge.syncAnnotation(ann)
+      }
+      return ann
+    }
+
+    const wrappedUpdate: typeof origUpdate = (id, patch) => {
+      const result = origUpdate(id, patch)
+      if (result && !patchedStore._bridgeSyncing) {
+        bridge.updateAnnotation(id, patch)
+      }
+      return result
+    }
+
+    const wrappedRemove: typeof origRemove = (id) => {
+      const result = origRemove(id)
+      if (result && !patchedStore._bridgeSyncing) {
+        bridge.removeAnnotation(id)
+      }
+      return result
+    }
+
+    const wrappedClear: typeof origClear = () => {
+      origClear()
+      if (!patchedStore._bridgeSyncing) {
+        bridge.clearAnnotations()
+      }
+    }
+
+    // Apply wrapped methods
+    Object.assign(annotationsStore, {
+      create: wrappedCreate,
+      update: wrappedUpdate,
+      remove: wrappedRemove,
+      clear: wrappedClear,
+    })
+
+    // Listen for events from other tabs via bridge
+    bridge.onEvent((event: BridgeEvent) => {
+      patchedStore._bridgeSyncing = true
+      try {
+        switch (event.type) {
+          case 'annotation_created':
+            // Only add if we don't already have it (came from another tab)
+            if (!annotationsStore.getById(event.annotation.id)) {
+              origCreate({
+                selector: event.annotation.selector,
+                elementDescription: event.annotation.elementDescription,
+                componentChain: event.annotation.componentChain,
+                feedback: event.annotation.feedback,
+                piniaStores: event.annotation.piniaStores,
+                route: event.annotation.route,
+                expected: event.annotation.expected,
+                actual: event.annotation.actual,
+              })
+            }
+            break
+          case 'annotation_updated':
+            origUpdate(event.annotation.id, event.annotation)
+            break
+          case 'annotation_removed':
+            origRemove(event.id)
+            break
+          case 'annotations_cleared':
+            origClear()
+            break
+        }
+      } finally {
+        patchedStore._bridgeSyncing = false
+      }
+    })
 
     // ── Mount toolbar overlay ─────────────────────────────────────────────
     // We create a separate app instance for the toolbar to fully isolate
