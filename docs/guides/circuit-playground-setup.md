@@ -9,6 +9,26 @@ By the end you'll have:
 
 ---
 
+## Quick Setup (Automated)
+
+If you prefer an automated setup, run the script from inside your `circuit-playground` directory:
+
+```bash
+# Option A: Download and run via gh CLI
+gh release download v0.1.0 --repo juergen-kc/VuePoint --pattern 'setup-vuepoint.sh'
+chmod +x setup-vuepoint.sh
+./setup-vuepoint.sh
+
+# Option B: One-liner via curl
+curl -fsSL https://raw.githubusercontent.com/juergen-kc/VuePoint/main/scripts/setup-vuepoint.sh | bash
+```
+
+**Prerequisites:** Node >= 18, pnpm >= 10, gh CLI (authenticated), CodeArtifact configured.
+
+The script handles everything: downloading tarballs, installing packages, creating the app shell, and patching Vite config. If you prefer to do it manually, continue with the steps below.
+
+---
+
 ## Table of Contents
 
 1. [Prerequisites](#1-prerequisites)
