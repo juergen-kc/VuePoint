@@ -667,3 +667,24 @@
   - Follow the Slack transformer pattern: pure function, typed options, typed output
   - Export pattern: types with `type` keyword, functions directly from `index.ts`
 ---
+
+## 2026-03-04 - US-037
+- Created team annotation dashboard as a standalone Vue 3 app in `packages/dashboard/`
+- Dashboard connects to API server's REST endpoints (`http://localhost:3742/api/v1/`) and WebSocket (`ws://localhost:3742/ws`) for real-time updates
+- Features implemented:
+  - Real-time annotation list with WebSocket push updates (create, update, remove, clear events)
+  - Filters by status (pending/acknowledged/resolved/dismissed), route, and text search
+  - Stats bar showing counts per status
+  - Detail panel with full annotation info (feedback, expected/actual, selector, component chain, SFC path, route, Pinia stores)
+  - Timeline history showing created/acknowledged/agent questions/resolved/dismissed events with timestamps
+  - CSV and Markdown export via API's `/api/v1/annotations/export` endpoint
+  - App context display (current route and page component)
+  - Auto-reconnect WebSocket with 5s backoff
+- Files created: `packages/dashboard/` (package.json, tsconfig.json, vite.config.ts, index.html, src/main.ts, src/App.vue, src/useApiClient.ts, src/env.d.ts)
+- Files modified: root package.json (added `dev:dashboard` script), root tsconfig.json (added dashboard includes), pnpm-lock.yaml
+- **Learnings for future iterations:**
+  - Dashboard connects directly to the API server (port 3742), not through SharedWorker — the API already exposes all needed endpoints including WebSocket
+  - API WebSocket events match BridgeEvent types: annotation_created, annotation_updated, annotation_removed, annotations_cleared, context_updated
+  - The export endpoint accepts `format` query param (json/markdown/csv) and `status` filter
+  - Dashboard is at port 3743 to avoid conflicts with API (3742) and bridge (3741)
+---
