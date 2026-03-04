@@ -88,3 +88,48 @@ if [[ -f .gitignore ]] && ! grep -q "^\.vuepoint" .gitignore; then
 fi
 
 echo ""
+
+# ── Phase 3: Install dependencies ─────────────────────────────────────────────
+info "Installing VuePoint packages..."
+
+# Check if already installed
+if grep -q '"@vuepoint/vue"' package.json 2>/dev/null; then
+  skip "@vuepoint/vue already in package.json"
+else
+  pnpm add \
+    "./$TARBALL_DIR/vuepoint-core-0.1.0.tgz" \
+    "./$TARBALL_DIR/vuepoint-vue-0.1.0.tgz" \
+    "./$TARBALL_DIR/vite-plugin-vuepoint-0.1.0.tgz" \
+    || fail "pnpm add failed. If you see a 401, re-run your CodeArtifact login."
+  ok "Added @vuepoint/core, @vuepoint/vue, vite-plugin-vuepoint"
+fi
+
+# Install MCP server as devDependency
+if grep -q '"@vuepoint/mcp"' package.json 2>/dev/null; then
+  skip "@vuepoint/mcp already in package.json"
+else
+  pnpm add -D "./$TARBALL_DIR/vuepoint-mcp-0.1.0.tgz" \
+    || fail "Failed to install @vuepoint/mcp"
+  ok "Added @vuepoint/mcp (dev)"
+fi
+
+# Patch package.json: add pnpm.overrides for @vuepoint/bridge
+if node -e "const p=JSON.parse(require('fs').readFileSync('package.json','utf8')); process.exit(p.pnpm?.overrides?.['@vuepoint/bridge'] ? 0 : 1)" 2>/dev/null; then
+  skip "pnpm.overrides for @vuepoint/bridge already set"
+else
+  node -e "
+    const fs = require('fs');
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    if (!pkg.pnpm) pkg.pnpm = {};
+    if (!pkg.pnpm.overrides) pkg.pnpm.overrides = {};
+    pkg.pnpm.overrides['@vuepoint/bridge'] = 'npm:@vuepoint/core@0.1.0';
+    fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+  "
+  ok "Added pnpm.overrides for @vuepoint/bridge"
+fi
+
+# Run install to resolve everything
+pnpm install || fail "pnpm install failed"
+ok "Dependencies installed"
+
+echo ""
