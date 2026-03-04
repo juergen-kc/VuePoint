@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VuePoint</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup">
+    <header class="header">
+      <div class="logo">
+        <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+          <path d="M2 4L16 28L30 4H24L16 20L8 4H2Z" fill="#42b883"/>
+          <path d="M8 4L16 18L24 4H20L16 12L12 4H8Z" fill="#35495e"/>
+        </svg>
+        <span class="title">VuePoint</span>
+      </div>
+      <span class="version">v0.1.0</span>
+    </header>
+
+    <div id="status" class="status status--scanning">
+      <span class="status-dot"></span>
+      <span class="status-text">Scanning for Vue 3...</span>
+    </div>
+
+    <div class="section">
+      <label class="field-label" for="mcp-port">MCP Server Port</label>
+      <input type="number" id="mcp-port" class="input" value="3741" min="1024" max="65535">
+    </div>
+
+    <div class="section">
+      <label class="field-label" for="api-port">API Server Port</label>
+      <input type="number" id="api-port" class="input" value="3742" min="1024" max="65535">
+    </div>
+
+    <div class="section">
+      <label class="field-label" for="auth-token">Auth Token</label>
+      <input type="text" id="auth-token" class="input" placeholder="Optional bearer token">
+    </div>
+
+    <div class="section">
+      <label class="checkbox-label">
+        <input type="checkbox" id="auto-inject">
+        <span>Auto-inject on Vue 3 pages</span>
+      </label>
+    </div>
+
+    <div class="actions">
+      <button id="inject-btn" class="btn btn--primary" disabled>
+        Inject VuePoint
+      </button>
+      <button id="save-btn" class="btn btn--secondary">
+        Save Settings
+      </button>
+    </div>
+
+    <div id="message" class="message hidden"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
