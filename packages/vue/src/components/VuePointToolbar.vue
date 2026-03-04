@@ -41,6 +41,9 @@ const mode = ref<UIMode>('idle')
 const isExpanded = ref(false)
 const pendingElement = ref<Element | null>(null)
 const feedbackText = ref('')
+const expectedText = ref('')
+const actualText = ref('')
+const showExpectedActual = ref(false)
 const hoveredElement = ref<Element | null>(null)
 
 const { getComponentChain, getComponentStores } = useVueInspector({
@@ -87,6 +90,9 @@ function exitAnnotationMode() {
   hoveredElement.value = null
   pendingElement.value = null
   feedbackText.value = ''
+  expectedText.value = ''
+  actualText.value = ''
+  showExpectedActual.value = false
 }
 
 function handleDocumentClick(e: MouseEvent) {
@@ -135,9 +141,14 @@ function submitAnnotation() {
     piniaStores: stores,
     route,
     feedback: feedbackText.value.trim(),
+    expected: expectedText.value.trim() || undefined,
+    actual: actualText.value.trim() || undefined,
   })
 
   feedbackText.value = ''
+  expectedText.value = ''
+  actualText.value = ''
+  showExpectedActual.value = false
   pendingElement.value = null
   mode.value = 'panel'
 }
@@ -145,6 +156,9 @@ function submitAnnotation() {
 function cancelAnnotation() {
   pendingElement.value = null
   feedbackText.value = ''
+  expectedText.value = ''
+  actualText.value = ''
+  showExpectedActual.value = false
   mode.value = 'idle'
   isExpanded.value = false
 }
@@ -225,6 +239,34 @@ function getCurrentRoute(): string | undefined {
           @keydown.meta.enter="submitAnnotation"
           @keydown.ctrl.enter="submitAnnotation"
         />
+        <button
+          class="vp-expand-toggle"
+          @click="showExpectedActual = !showExpectedActual"
+        >
+          <svg
+            width="12" height="12" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2"
+            :class="{ 'vp-chevron--open': showExpectedActual }"
+            class="vp-chevron"
+          >
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+          Expected / Actual
+        </button>
+        <div v-if="showExpectedActual" class="vp-expected-actual">
+          <textarea
+            v-model="expectedText"
+            class="vp-feedback-input vp-feedback-input--sm"
+            placeholder="Expected behavior…"
+            rows="2"
+          />
+          <textarea
+            v-model="actualText"
+            class="vp-feedback-input vp-feedback-input--sm"
+            placeholder="Actual behavior…"
+            rows="2"
+          />
+        </div>
         <div class="vp-feedback-actions">
           <span class="vp-hint">⌘↵ to submit</span>
           <button class="vp-btn-secondary" @click="cancelAnnotation">Cancel</button>
@@ -432,6 +474,40 @@ function getCurrentRoute(): string | undefined {
   outline: none;
 }
 .vp-feedback-input::placeholder { color: #4a5568; }
+
+/* ── Expected/Actual toggle ──────────────────────────────────────────── */
+.vp-expand-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px 6px;
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.vp-expand-toggle:hover { color: #94a3b8; }
+
+.vp-chevron {
+  transition: transform 0.15s ease;
+}
+.vp-chevron--open {
+  transform: rotate(180deg);
+}
+
+.vp-expected-actual {
+  border-top: 1px solid #334155;
+}
+
+.vp-feedback-input--sm {
+  font-size: 12px;
+  padding: 8px 14px;
+}
+.vp-feedback-input--sm + .vp-feedback-input--sm {
+  border-top: 1px solid #2d3748;
+}
 
 .vp-feedback-actions {
   display: flex;

@@ -191,3 +191,18 @@
   - `@click.stop` on delete buttons prevents the parent `@click` (scroll-to-element) from firing — important for nested click handlers
   - Status badge uses dynamic class `:class="vp-status--${ann.status}"` for shared color theming between number badge and label
 ---
+
+## 2026-03-04 - US-012
+- Added collapsible Expected/Actual text fields to the feedback modal in VuePointToolbar.vue
+- Fields hidden by default behind a chevron toggle button ("Expected / Actual")
+- Values passed as `expected`/`actual` to `annotationsStore.create()` (empty string → `undefined`)
+- All state (`expectedText`, `actualText`, `showExpectedActual`) cleared on submit, cancel, and exitAnnotationMode
+- Types already supported `expected`/`actual` on `Annotation` and `AnnotationCreateInput`
+- `output.ts` already conditionally includes Expected/Actual in Markdown output
+- Typecheck passes clean
+- Files changed: VuePointToolbar.vue (template + script + styles), prd.json, progress.md
+- **Learnings for future iterations:**
+  - Many UI stories only need template+style changes because the types and formatters were designed upfront with optional fields
+  - The `.vp-feedback-input--sm` CSS modifier reuses the base input class — keeps styles DRY for secondary textareas
+  - Chevron rotation via CSS `transform: rotate(180deg)` with a transition is the simplest open/close indicator
+---
