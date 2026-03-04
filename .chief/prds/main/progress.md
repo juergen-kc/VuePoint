@@ -206,3 +206,21 @@
   - The `.vp-feedback-input--sm` CSS modifier reuses the base input class — keeps styles DRY for secondary textareas
   - Chevron rotation via CSS `transform: rotate(180deg)` with a transition is the simplest open/close indicator
 ---
+
+## 2026-03-04 - US-013
+- Implemented dark/light mode toggle for the entire VuePoint toolbar UI
+- Theme system uses CSS custom properties (`--vp-*`) defined on `.vp-root`, switched via `data-vp-theme` attribute
+- 15 theme tokens cover all surface, text, border, shadow, and accent colors
+- Sun/moon toggle button added to toolbar (between annotate FAB and count badge)
+- Auto-detects system preference via `prefers-color-scheme` media query
+- Persists user choice in `localStorage` under `vuepoint-theme` key
+- All three components updated: VuePointToolbar (variables + toggle), AnnotationPanel (var references with dark fallbacks), AnnotationMarker (shadow token)
+- Status badge colors (pending/acknowledged/resolved/dismissed) remain constant across themes for consistent visual semantics
+- Typecheck passes clean
+- Files changed: VuePointToolbar.vue (theme state + CSS vars + toggle button), AnnotationPanel.vue (var references), AnnotationMarker.vue (shadow var), prd.json, progress.md
+- **Learnings for future iterations:**
+  - CSS custom properties cascade through Vue scoped styles — parent's vars are available to child components since they're set on the actual DOM element, not just in CSS scope
+  - Using `var(--token, fallback)` in child components ensures they work standalone even if parent vars aren't set
+  - Theme-agnostic colors (status badges, red delete) should NOT be tokenized — they're semantic constants
+  - `localStorage` + `prefers-color-scheme` is the standard detect-then-persist pattern; stored value always takes priority over system preference
+---

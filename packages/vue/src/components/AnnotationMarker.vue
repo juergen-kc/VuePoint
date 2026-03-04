@@ -135,7 +135,7 @@ function handleClick() {
   color: white;
   cursor: pointer;
   z-index: 2147483646;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 4px var(--vp-shadow-fab, rgba(0, 0, 0, 0.3));
   pointer-events: auto;
   transition: transform 0.1s ease, background 0.2s ease;
   user-select: none;

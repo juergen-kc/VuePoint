@@ -115,10 +115,10 @@ function statusLabel(status: Annotation['status']): string {
   right: 20px;
   width: 380px;
   max-height: 420px;
-  background: #1e1e2e;
-  border: 1px solid #334155;
+  background: var(--vp-bg, #1e1e2e);
+  border: 1px solid var(--vp-border, #334155);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px var(--vp-shadow, rgba(0, 0, 0, 0.4));
   z-index: 2147483647;
   display: flex;
   flex-direction: column;
@@ -132,29 +132,29 @@ function statusLabel(status: Annotation['status']): string {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: #16213e;
-  border-bottom: 1px solid #334155;
+  background: var(--vp-bg-header, #16213e);
+  border-bottom: 1px solid var(--vp-border, #334155);
   flex-shrink: 0;
 }
 
 .vp-panel-title {
   font-size: 13px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: var(--vp-text, #e2e8f0);
 }
 
 .vp-btn-ghost {
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--vp-text-faint, #64748b);
   cursor: pointer;
   font-size: 14px;
   padding: 2px 6px;
   border-radius: 4px;
 }
 .vp-btn-ghost:hover {
-  color: #e2e8f0;
-  background: #334155;
+  color: var(--vp-text, #e2e8f0);
+  background: var(--vp-border, #334155);
 }
 
 /* ── Empty state ─────────────────────────────────────────────────────────── */
@@ -164,7 +164,7 @@ function statusLabel(status: Annotation['status']): string {
   align-items: center;
   gap: 8px;
   padding: 32px 20px;
-  color: #64748b;
+  color: var(--vp-text-faint, #64748b);
   text-align: center;
 }
 .vp-panel-empty p {
@@ -173,7 +173,7 @@ function statusLabel(status: Annotation['status']): string {
 }
 .vp-panel-empty-hint {
   font-size: 12px !important;
-  color: #4a5568 !important;
+  color: var(--vp-text-hint, #4a5568) !important;
 }
 
 /* ── Scrollable list ─────────────────────────────────────────────────────── */
@@ -186,7 +186,7 @@ function statusLabel(status: Annotation['status']): string {
   width: 4px;
 }
 .vp-panel-list::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: var(--vp-border, #334155);
   border-radius: 4px;
 }
 
@@ -200,7 +200,7 @@ function statusLabel(status: Annotation['status']): string {
   transition: background 0.1s;
 }
 .vp-panel-item:hover {
-  background: #2d2d4e;
+  background: var(--vp-bg-hover, #2d2d4e);
 }
 
 /* Number badge */
@@ -226,7 +226,7 @@ function statusLabel(status: Annotation['status']): string {
 
 .vp-panel-item-element {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--vp-text-muted, #94a3b8);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -235,7 +235,7 @@ function statusLabel(status: Annotation['status']): string {
 
 .vp-panel-item-feedback {
   font-size: 13px;
-  color: #e2e8f0;
+  color: var(--vp-text, #e2e8f0);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -264,7 +264,7 @@ function statusLabel(status: Annotation['status']): string {
   height: 28px;
   background: none;
   border: none;
-  color: #4a5568;
+  color: var(--vp-text-hint, #4a5568);
   cursor: pointer;
   border-radius: 6px;
   transition: color 0.15s, background 0.15s;

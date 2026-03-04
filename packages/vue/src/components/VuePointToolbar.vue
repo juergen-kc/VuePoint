@@ -33,6 +33,25 @@ const props = defineProps<{
   options: VuePointOptions & { filterSet: Set<string> }
 }>()
 
+// ─── Theme ────────────────────────────────────────────────────────────────────
+
+type Theme = 'dark' | 'light'
+
+const THEME_STORAGE_KEY = 'vuepoint-theme'
+
+function detectTheme(): Theme {
+  const stored = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null
+  if (stored === 'dark' || stored === 'light') return stored
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+}
+
+const theme = ref<Theme>(detectTheme())
+
+function toggleTheme() {
+  theme.value = theme.value === 'dark' ? 'light' : 'dark'
+  localStorage.setItem(THEME_STORAGE_KEY, theme.value)
+}
+
 // ─── State ────────────────────────────────────────────────────────────────────
 
 type UIMode = 'idle' | 'annotating' | 'panel'
@@ -205,7 +224,7 @@ function getCurrentRoute(): string | undefined {
 </script>
 
 <template>
-  <div data-vuepoint="true" class="vp-root">
+  <div data-vuepoint="true" class="vp-root" :data-vp-theme="theme">
 
     <!-- Hover highlight -->
     <div
@@ -307,6 +326,26 @@ function getCurrentRoute(): string | undefined {
         <span v-else>Cancel</span>
       </button>
 
+      <!-- Theme toggle -->
+      <button
+        class="vp-icon-btn"
+        :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+        @click="toggleTheme"
+      >
+        <!-- Sun icon (shown in dark mode → click to go light) -->
+        <svg v-if="theme === 'dark'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in light mode → click to go dark) -->
+        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+        </svg>
+      </button>
+
       <!-- Badge showing pending count -->
       <button
         v-if="pendingCount > 0"
@@ -338,6 +377,47 @@ function getCurrentRoute(): string | undefined {
 
 
 <style scoped>
+/* ── Theme tokens (dark = default) ───────────────────────────────────────── */
+.vp-root {
+  --vp-bg: #1e1e2e;
+  --vp-bg-elevated: #1a1a2e;
+  --vp-bg-header: #16213e;
+  --vp-bg-hover: #2d2d4e;
+  --vp-border: #334155;
+  --vp-border-subtle: #2d3748;
+  --vp-text: #e2e8f0;
+  --vp-text-muted: #94a3b8;
+  --vp-text-faint: #64748b;
+  --vp-text-hint: #4a5568;
+  --vp-accent: #4f81bd;
+  --vp-accent-hover: #3a6fa8;
+  --vp-code: #64b5f6;
+  --vp-shadow: rgba(0, 0, 0, 0.4);
+  --vp-shadow-fab: rgba(0, 0, 0, 0.3);
+  --vp-highlight-border: #4f81bd;
+  --vp-highlight-bg: rgba(79, 129, 189, 0.08);
+}
+
+.vp-root[data-vp-theme="light"] {
+  --vp-bg: #ffffff;
+  --vp-bg-elevated: #f8fafc;
+  --vp-bg-header: #f1f5f9;
+  --vp-bg-hover: #e2e8f0;
+  --vp-border: #cbd5e1;
+  --vp-border-subtle: #e2e8f0;
+  --vp-text: #1e293b;
+  --vp-text-muted: #475569;
+  --vp-text-faint: #64748b;
+  --vp-text-hint: #94a3b8;
+  --vp-accent: #4f81bd;
+  --vp-accent-hover: #3a6fa8;
+  --vp-code: #2563eb;
+  --vp-shadow: rgba(0, 0, 0, 0.12);
+  --vp-shadow-fab: rgba(0, 0, 0, 0.15);
+  --vp-highlight-border: #4f81bd;
+  --vp-highlight-bg: rgba(79, 129, 189, 0.12);
+}
+
 /* ── Reset & scope ───────────────────────────────────────────────────────── */
 .vp-root * {
   box-sizing: border-box;
@@ -348,9 +428,9 @@ function getCurrentRoute(): string | undefined {
 .vp-highlight {
   position: absolute;
   pointer-events: none;
-  outline: 2px solid #4f81bd;
+  outline: 2px solid var(--vp-highlight-border);
   outline-offset: 1px;
-  background: rgba(79, 129, 189, 0.08);
+  background: var(--vp-highlight-bg);
   border-radius: 3px;
   z-index: 2147483646;
   transition: all 0.1s ease;
@@ -373,18 +453,18 @@ function getCurrentRoute(): string | undefined {
   gap: 7px;
   height: 38px;
   padding: 0 14px 0 10px;
-  background: #1a1a2e;
-  color: #e2e8f0;
-  border: 1px solid #334155;
+  background: var(--vp-bg-elevated);
+  color: var(--vp-text);
+  border: 1px solid var(--vp-border);
   border-radius: 999px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 12px var(--vp-shadow-fab);
   transition: background 0.15s, transform 0.1s;
 }
-.vp-fab:hover { background: #2d2d4e; transform: translateY(-1px); }
-.vp-fab--active { background: #4f81bd; border-color: #4f81bd; color: white; }
+.vp-fab:hover { background: var(--vp-bg-hover); transform: translateY(-1px); }
+.vp-fab--active { background: var(--vp-accent); border-color: var(--vp-accent); color: white; }
 
 .vp-count-btn {
   min-width: 28px;
@@ -400,7 +480,7 @@ function getCurrentRoute(): string | undefined {
   transition: background 0.15s;
 }
 .vp-count-btn:hover { background: #dc2626; }
-.vp-count-btn--active { background: #4f81bd; }
+.vp-count-btn--active { background: var(--vp-accent); }
 
 .vp-icon-btn {
   width: 32px;
@@ -408,14 +488,14 @@ function getCurrentRoute(): string | undefined {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #1a1a2e;
-  color: #94a3b8;
-  border: 1px solid #334155;
+  background: var(--vp-bg-elevated);
+  color: var(--vp-text-muted);
+  border: 1px solid var(--vp-border);
   border-radius: 8px;
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
-.vp-icon-btn:hover { color: #e2e8f0; background: #2d2d4e; }
+.vp-icon-btn:hover { color: var(--vp-text); background: var(--vp-bg-hover); }
 
 /* ── Feedback modal ──────────────────────────────────────────────────────── */
 .vp-feedback-modal {
@@ -423,10 +503,10 @@ function getCurrentRoute(): string | undefined {
   bottom: 72px;
   right: 20px;
   width: 380px;
-  background: #1e1e2e;
-  border: 1px solid #334155;
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-border);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 32px var(--vp-shadow);
   z-index: 2147483647;
   overflow: hidden;
 }
@@ -436,15 +516,15 @@ function getCurrentRoute(): string | undefined {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: #16213e;
-  border-bottom: 1px solid #334155;
+  background: var(--vp-bg-header);
+  border-bottom: 1px solid var(--vp-border);
   gap: 8px;
 }
 
 .vp-feedback-selector {
   font-family: 'Courier New', monospace;
   font-size: 11px;
-  color: #64b5f6;
+  color: var(--vp-code);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -454,26 +534,26 @@ function getCurrentRoute(): string | undefined {
 .vp-btn-ghost {
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--vp-text-faint);
   cursor: pointer;
   font-size: 14px;
   padding: 2px 6px;
   border-radius: 4px;
 }
-.vp-btn-ghost:hover { color: #e2e8f0; background: #334155; }
+.vp-btn-ghost:hover { color: var(--vp-text); background: var(--vp-border); }
 
 .vp-feedback-input {
   width: 100%;
   padding: 12px 14px;
   background: transparent;
   border: none;
-  color: #e2e8f0;
+  color: var(--vp-text);
   font-size: 13px;
   line-height: 1.5;
   resize: none;
   outline: none;
 }
-.vp-feedback-input::placeholder { color: #4a5568; }
+.vp-feedback-input::placeholder { color: var(--vp-text-hint); }
 
 /* ── Expected/Actual toggle ──────────────────────────────────────────── */
 .vp-expand-toggle {
@@ -483,12 +563,12 @@ function getCurrentRoute(): string | undefined {
   padding: 4px 14px 6px;
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--vp-text-faint);
   font-size: 12px;
   cursor: pointer;
   transition: color 0.15s;
 }
-.vp-expand-toggle:hover { color: #94a3b8; }
+.vp-expand-toggle:hover { color: var(--vp-text-muted); }
 
 .vp-chevron {
   transition: transform 0.15s ease;
@@ -498,7 +578,7 @@ function getCurrentRoute(): string | undefined {
 }
 
 .vp-expected-actual {
-  border-top: 1px solid #334155;
+  border-top: 1px solid var(--vp-border);
 }
 
 .vp-feedback-input--sm {
@@ -506,7 +586,7 @@ function getCurrentRoute(): string | undefined {
   padding: 8px 14px;
 }
 .vp-feedback-input--sm + .vp-feedback-input--sm {
-  border-top: 1px solid #2d3748;
+  border-top: 1px solid var(--vp-border-subtle);
 }
 
 .vp-feedback-actions {
@@ -516,24 +596,24 @@ function getCurrentRoute(): string | undefined {
   padding: 8px 14px 12px;
 }
 
-.vp-hint { font-size: 11px; color: #4a5568; flex: 1; }
+.vp-hint { font-size: 11px; color: var(--vp-text-hint); flex: 1; }
 
 .vp-btn-secondary {
   height: 32px;
   padding: 0 12px;
   background: transparent;
-  color: #94a3b8;
-  border: 1px solid #334155;
+  color: var(--vp-text-muted);
+  border: 1px solid var(--vp-border);
   border-radius: 6px;
   font-size: 13px;
   cursor: pointer;
 }
-.vp-btn-secondary:hover { border-color: #4f81bd; color: #e2e8f0; }
+.vp-btn-secondary:hover { border-color: var(--vp-accent); color: var(--vp-text); }
 
 .vp-btn-primary {
   height: 32px;
   padding: 0 14px;
-  background: #4f81bd;
+  background: var(--vp-accent);
   color: white;
   border: none;
   border-radius: 6px;
@@ -542,7 +622,7 @@ function getCurrentRoute(): string | undefined {
   cursor: pointer;
   transition: background 0.15s;
 }
-.vp-btn-primary:hover:not(:disabled) { background: #3a6fa8; }
+.vp-btn-primary:hover:not(:disabled) { background: var(--vp-accent-hover); }
 .vp-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Transitions ─────────────────────────────────────────────────────────── */
