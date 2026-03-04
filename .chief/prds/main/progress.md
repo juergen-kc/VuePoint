@@ -584,3 +584,22 @@
   - `pnpm/action-setup@v4` auto-detects pnpm version from `packageManager` field in `package.json`
   - `passWithNoTests: true` in Vitest config lets CI pass before tests exist (US-033 will add them)
 ---
+
+## 2026-03-04 - US-033
+- Implemented unit tests for all core packages using Vitest
+- **selector.ts** (20 tests): unique selector generation, max depth, ID priority, data-testid/data-cy anchors, class filtering (long/hash classes), nth-child fallback, special characters, describeElement for various element types
+- **output.ts** (27 tests): single annotation format, batch format, optional field omission (expected/actual, Pinia stores, route, screenshot, props), multi-element details, area selection, ID header, empty batch
+- **primevue-filter.ts** (8 tests): default list size validation, Vue builtins presence, buildFilter with false/undefined/custom array, deduplication
+- **useAnnotations.ts** (21 tests): CRUD operations, status lifecycle (pending→acknowledged→resolved/dismissed), computed filters (pending/resolved/withUnansweredQuestions), replyToQuestion, clear
+- Files created:
+  - `packages/core/src/selector.test.ts`
+  - `packages/core/src/output.test.ts`
+  - `packages/core/src/primevue-filter.test.ts`
+  - `packages/vue/src/composables/useAnnotations.test.ts`
+- Files changed: `package.json` (added happy-dom devDep), `pnpm-lock.yaml`
+- **Learnings for future iterations:**
+  - Vitest environment can be set per-file with `@vitest-environment happy-dom` comment — no need to change global config
+  - happy-dom is needed for DOM-based tests (selector.ts); Vue reactivity works out of the box with vitest
+  - When testing `generateSelector`, the target element's selector must NOT be unique by itself — duplicate elements in DOM fixtures force the algorithm to climb the tree
+  - Test files must be colocated with source files matching `packages/*/src/**/*.{test,spec}.ts` per vitest.config.ts
+---
