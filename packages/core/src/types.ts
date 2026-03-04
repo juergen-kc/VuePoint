@@ -50,6 +50,10 @@ export interface Annotation {
   /** Optional structured fields */
   expected?: string
   actual?: string
+  /** Selected text content for text selection annotations */
+  selectedText?: string
+  /** Bounding rect of the text selection (viewport-relative at capture time) */
+  textSelectionRect?: AnnotationRect
   /** Base64 PNG screenshot of the annotated area (opt-in, Phase 2) */
   screenshot?: string
   status: AnnotationStatus
@@ -67,7 +71,7 @@ export interface Annotation {
 export type AnnotationCreateInput = Pick<
   Annotation,
   'selector' | 'elementDescription' | 'componentChain' | 'feedback'
-> & Partial<Pick<Annotation, 'elements' | 'areaRect' | 'piniaStores' | 'route' | 'expected' | 'actual' | 'screenshot'>>
+> & Partial<Pick<Annotation, 'elements' | 'areaRect' | 'selectedText' | 'textSelectionRect' | 'piniaStores' | 'route' | 'expected' | 'actual' | 'screenshot'>>
 
 // ─── Webhook Types ────────────────────────────────────────────────────────────
 

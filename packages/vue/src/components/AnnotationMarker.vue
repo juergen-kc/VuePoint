@@ -24,6 +24,7 @@ const emit = defineEmits<{
 // ─── Area annotation detection ──────────────────────────────────────────────
 
 const isAreaAnnotation = computed(() => !!props.annotation.areaRect)
+const isTextAnnotation = computed(() => !!props.annotation.selectedText)
 
 // ─── Position tracking ───────────────────────────────────────────────────────
 
@@ -45,6 +46,17 @@ function findTarget(): Element | null {
 }
 
 function updatePosition() {
+  // Text selection annotations use stored rect
+  if (isTextAnnotation.value && props.annotation.textSelectionRect) {
+    const r = props.annotation.textSelectionRect
+    top.value = r.y + r.scrollY
+    left.value = r.x + r.scrollX
+    areaWidth.value = r.width
+    areaHeight.value = r.height
+    visible.value = true
+    return
+  }
+
   // Area annotations use stored rect, not a CSS selector
   if (isAreaAnnotation.value && props.annotation.areaRect) {
     const r = props.annotation.areaRect
@@ -125,9 +137,27 @@ function handleClick() {
 </script>
 
 <template>
+  <!-- Text selection annotation: highlight background -->
+  <div
+    v-if="visible && isTextAnnotation"
+    data-vuepoint="true"
+    class="vp-text-marker"
+    :class="statusClass"
+    :style="{
+      top: top + 'px',
+      left: left + 'px',
+      width: areaWidth + 'px',
+      height: areaHeight + 'px',
+    }"
+    :title="`#${index} — ${annotation.elementDescription}`"
+    @click.stop="handleClick"
+  >
+    <span class="vp-text-badge" :class="statusClass">{{ index }}</span>
+  </div>
+
   <!-- Area annotation: dashed border rectangle -->
   <div
-    v-if="visible && isAreaAnnotation"
+    v-else-if="visible && isAreaAnnotation"
     data-vuepoint="true"
     class="vp-area-marker"
     :class="statusClass"
@@ -253,4 +283,64 @@ function handleClick() {
 .vp-area-badge.vp-marker--acknowledged { background: #f59e0b; }
 .vp-area-badge.vp-marker--resolved { background: #22c55e; }
 .vp-area-badge.vp-marker--dismissed { background: #6b7280; }
+
+/* ── Text selection annotation marker (highlight) ──────────────────────── */
+.vp-text-marker {
+  position: absolute;
+  pointer-events: auto;
+  background: rgba(124, 58, 237, 0.20);
+  border-bottom: 2px solid #7c3aed;
+  border-radius: 2px;
+  z-index: 2147483645;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.vp-text-marker:hover {
+  background: rgba(124, 58, 237, 0.35);
+}
+
+.vp-text-marker.vp-marker--pending {
+  background: rgba(124, 58, 237, 0.20);
+  border-bottom-color: #7c3aed;
+}
+
+.vp-text-marker.vp-marker--acknowledged {
+  background: rgba(245, 158, 11, 0.20);
+  border-bottom-color: #f59e0b;
+}
+
+.vp-text-marker.vp-marker--resolved {
+  background: rgba(34, 197, 94, 0.20);
+  border-bottom-color: #22c55e;
+}
+
+.vp-text-marker.vp-marker--dismissed {
+  background: rgba(107, 114, 128, 0.20);
+  border-bottom-color: #6b7280;
+}
+
+/* Small numbered badge in top-right corner of text highlight */
+.vp-text-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: white;
+  user-select: none;
+  box-shadow: 0 1px 4px var(--vp-shadow-fab, rgba(0, 0, 0, 0.3));
+}
+
+.vp-text-badge.vp-marker--pending { background: #7c3aed; }
+.vp-text-badge.vp-marker--acknowledged { background: #f59e0b; }
+.vp-text-badge.vp-marker--resolved { background: #22c55e; }
+.vp-text-badge.vp-marker--dismissed { background: #6b7280; }
 </style>

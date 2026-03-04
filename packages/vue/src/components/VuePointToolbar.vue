@@ -88,6 +88,65 @@ const areaDragRect = ref<DragRect | null>(null)
 const areaRect = ref<AnnotationRect | null>(null)
 const areaElements = ref<AnnotationElement[]>([])
 
+// Text selection state
+const hasTextSelection = ref(false)
+const textSelection = ref<{
+  text: string
+  containingElement: Element
+  rect: AnnotationRect
+} | null>(null)
+
+function checkTextSelection() {
+  const sel = window.getSelection()
+  if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+    hasTextSelection.value = false
+    return
+  }
+  // Ignore selections inside VuePoint's own UI
+  const anchorEl = sel.anchorNode?.parentElement
+  if (anchorEl && isVuePointElement(anchorEl)) {
+    hasTextSelection.value = false
+    return
+  }
+  hasTextSelection.value = true
+}
+
+function captureTextSelection() {
+  const sel = window.getSelection()
+  if (!sel || sel.isCollapsed || !sel.toString().trim()) return
+
+  const text = sel.toString().trim()
+  const range = sel.getRangeAt(0)
+  const rect = range.getBoundingClientRect()
+
+  // Find the containing element (common ancestor that is an Element)
+  let container = range.commonAncestorContainer
+  if (container.nodeType === Node.TEXT_NODE) {
+    container = container.parentElement!
+  }
+
+  textSelection.value = {
+    text,
+    containingElement: container as Element,
+    rect: {
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+    },
+  }
+
+  pendingElement.value = container as Element
+  mode.value = 'panel'
+  isExpanded.value = true
+
+  // Clear the browser selection to avoid confusion
+  sel.removeAllRanges()
+  hasTextSelection.value = false
+}
+
 const selectionRectStyle = computed(() => {
   const rect = isDragging.value ? dragRect.value : areaDragRect.value
   if (!rect) return null
@@ -106,10 +165,12 @@ const pendingCount = computed(() => props.annotationsStore.pending.value.length)
 
 onMounted(() => {
   document.addEventListener('vuepoint:toggle', handleToggle)
+  document.addEventListener('selectionchange', checkTextSelection)
 })
 
 onUnmounted(() => {
   document.removeEventListener('vuepoint:toggle', handleToggle)
+  document.removeEventListener('selectionchange', checkTextSelection)
   exitAnnotationMode()
 })
 
@@ -149,6 +210,7 @@ function exitAnnotationMode() {
   areaDragRect.value = null
   areaRect.value = null
   areaElements.value = []
+  textSelection.value = null
   feedbackText.value = ''
   expectedText.value = ''
   actualText.value = ''
@@ -316,10 +378,18 @@ function submitAnnotation() {
   // Build annotation data based on selection type
   let elements: AnnotationElement[] | undefined
   let capturedAreaRect: AnnotationRect | undefined
+  let selectedText: string | undefined
+  let textSelectionRect: AnnotationRect | undefined
   let selector: string
   let elementDescription: string
 
-  if (areaRect.value) {
+  if (textSelection.value) {
+    // Text selection annotation
+    selectedText = textSelection.value.text
+    textSelectionRect = { ...textSelection.value.rect }
+    selector = generateSelector(el)
+    elementDescription = `Text: "${selectedText.length > 60 ? selectedText.slice(0, 57) + '...' : selectedText}"`
+  } else if (areaRect.value) {
     // Alt+drag: area selection
     capturedAreaRect = { ...areaRect.value }
     elements = areaElements.value.length > 0 ? [...areaElements.value] : undefined
@@ -348,6 +418,8 @@ function submitAnnotation() {
     componentChain: chain,
     elements,
     areaRect: capturedAreaRect,
+    selectedText,
+    textSelectionRect,
     piniaStores: stores,
     route,
     feedback: feedbackText.value.trim(),
@@ -363,6 +435,7 @@ function submitAnnotation() {
   multiSelectElements.value = []
   areaRect.value = null
   areaElements.value = []
+  textSelection.value = null
   mode.value = 'panel'
 }
 
@@ -371,6 +444,7 @@ function cancelAnnotation() {
   multiSelectElements.value = []
   areaRect.value = null
   areaElements.value = []
+  textSelection.value = null
   feedbackText.value = ''
   expectedText.value = ''
   actualText.value = ''
@@ -458,11 +532,13 @@ function getCurrentRoute(): string | undefined {
       <div v-if="pendingElement && mode === 'panel'" class="vp-feedback-modal">
         <div class="vp-feedback-header">
           <span class="vp-feedback-selector">
-            {{ areaRect
-              ? `Area selection (${Math.round(areaRect.width)}×${Math.round(areaRect.height)})`
-              : multiSelectElements.length > 1
-                ? `Multi-select (${multiSelectElements.length} elements)`
-                : generateSelector(pendingElement) }}
+            {{ textSelection
+              ? `Text: "${textSelection.text.length > 40 ? textSelection.text.slice(0, 37) + '...' : textSelection.text}"`
+              : areaRect
+                ? `Area selection (${Math.round(areaRect.width)}×${Math.round(areaRect.height)})`
+                : multiSelectElements.length > 1
+                  ? `Multi-select (${multiSelectElements.length} elements)`
+                  : generateSelector(pendingElement) }}
           </span>
           <button class="vp-btn-ghost" @click="cancelAnnotation">✕</button>
         </div>
@@ -541,6 +617,19 @@ function getCurrentRoute(): string | undefined {
         </svg>
         <span v-if="mode !== 'annotating'">Annotate</span>
         <span v-else>Cancel</span>
+      </button>
+
+      <!-- Annotate text selection button -->
+      <button
+        v-if="hasTextSelection && mode !== 'annotating'"
+        class="vp-fab vp-fab--text-select"
+        title="Annotate selected text"
+        @click="captureTextSelection"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 10H3"/><path d="M21 6H3"/><path d="M21 14H3"/><path d="M17 18H3"/>
+        </svg>
+        Annotate Selection
       </button>
 
       <!-- Theme toggle -->
@@ -698,6 +787,8 @@ function getCurrentRoute(): string | undefined {
 }
 .vp-fab:hover { background: var(--vp-bg-hover); transform: translateY(-1px); }
 .vp-fab--active { background: var(--vp-accent); border-color: var(--vp-accent); color: white; }
+.vp-fab--text-select { background: #7c3aed; border-color: #7c3aed; color: white; font-size: 12px; }
+.vp-fab--text-select:hover { background: #6d28d9; transform: translateY(-1px); }
 
 .vp-count-btn {
   min-width: 28px;

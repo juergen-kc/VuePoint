@@ -378,3 +378,24 @@
   - The `selectionRectStyle` computed can serve both drag types by checking which is active — avoids duplicating the rect-to-CSS logic
   - `handleDragStart` checks `e.altKey` before `e.shiftKey` isn't needed since they're checked with `||` — both keys trigger the handler, but the body distinguishes them
 ---
+
+## 2026-03-04 - US-017
+- Implemented text selection annotation: select text on page, click "Annotate Selection" in toolbar
+- Added `selectedText` and `textSelectionRect` fields to `Annotation` and `AnnotationCreateInput` types
+- Added `selectionchange` event listener to detect active text selections in the browser
+- "Annotate Selection" button appears in toolbar (purple accent) when text is selected and not in annotate mode
+- `captureTextSelection()` uses `window.getSelection()` + `Range.getBoundingClientRect()` to capture text and position
+- Containing element resolved via `range.commonAncestorContainer` — its selector and component chain are captured
+- AnnotationMarker.vue renders text annotations as semi-transparent purple highlights with bottom border and numbered badge
+- Text highlight persists on the page at the original selection position (using stored scroll offsets for page-absolute coords)
+- Updated output.ts to include `**Selected Text:** \`...\`` in Markdown output for text annotations
+- Feedback modal header shows truncated selected text for context
+- Typecheck passes clean; build succeeds
+- Files changed: types.ts (selectedText + textSelectionRect fields), output.ts (text output), VuePointToolbar.vue (selection state + button + submit logic), AnnotationMarker.vue (text highlight marker + CSS), prd.json, progress.md
+- **Learnings for future iterations:**
+  - `document.addEventListener('selectionchange', ...)` fires on every selection change (including deselect) — check `sel.isCollapsed` to detect actual selections
+  - `window.getSelection().getRangeAt(0).getBoundingClientRect()` returns the tightest rect around selected text — more precise than the containing element's rect
+  - `range.commonAncestorContainer` is often a Text node — check `nodeType === Node.TEXT_NODE` and use `.parentElement` to get the containing Element
+  - Text annotations use a distinct purple color (#7c3aed) to visually distinguish them from element (blue) and area (orange) annotation types
+  - `sel.removeAllRanges()` clears the browser's text selection after capture to avoid visual confusion with the persistent highlight marker
+---

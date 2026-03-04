@@ -56,6 +56,11 @@ export function formatAnnotation(
     }
   }
 
+  // Selected text (from text selection annotation)
+  if (ann.selectedText) {
+    lines.push(`**Selected Text:** \`${ann.selectedText}\``)
+  }
+
   // Multi-element details (from Shift+drag selection)
   if (ann.elements && ann.elements.length > 0) {
     lines.push('')
