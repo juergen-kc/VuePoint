@@ -7,7 +7,7 @@
  * scroll-to-element on click.
  */
 
-import { defineOptions } from 'vue'
+import { defineOptions, ref, nextTick } from 'vue'
 import type { Annotation } from '@vuepoint/core'
 import type { AnnotationsStore } from '../composables/useAnnotations.js'
 
@@ -20,6 +20,46 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
 }>()
+
+// ─── Inline Editing ─────────────────────────────────────────────────────────
+
+const editingId = ref<string | null>(null)
+const editText = ref('')
+const editInput = ref<HTMLTextAreaElement | null>(null)
+
+function startEditing(annotation: Annotation) {
+  editingId.value = annotation.id
+  editText.value = annotation.feedback
+  nextTick(() => {
+    if (editInput.value) {
+      editInput.value.focus()
+      editInput.value.select()
+    }
+  })
+}
+
+function saveEdit() {
+  if (editingId.value && editText.value.trim()) {
+    props.store.update(editingId.value, { feedback: editText.value.trim() })
+  }
+  editingId.value = null
+  editText.value = ''
+}
+
+function cancelEdit() {
+  editingId.value = null
+  editText.value = ''
+}
+
+function handleEditKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    saveEdit()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    cancelEdit()
+  }
+}
 
 // ─── Actions ────────────────────────────────────────────────────────────────
 
@@ -85,7 +125,24 @@ function statusLabel(status: Annotation['status']): string {
         <!-- Center: description + feedback -->
         <div class="vp-panel-item-content">
           <div class="vp-panel-item-element">{{ ann.elementDescription }}</div>
-          <div class="vp-panel-item-feedback">{{ ann.feedback }}</div>
+          <!-- Inline edit mode -->
+          <textarea
+            v-if="editingId === ann.id"
+            ref="editInput"
+            v-model="editText"
+            class="vp-panel-item-edit"
+            rows="2"
+            @blur="saveEdit"
+            @keydown="handleEditKeydown"
+            @click.stop
+          />
+          <!-- Read mode — double-click to edit -->
+          <div
+            v-else
+            class="vp-panel-item-feedback"
+            title="Double-click to edit"
+            @dblclick.stop="startEditing(ann)"
+          >{{ ann.feedback }}</div>
           <span class="vp-panel-item-status" :class="`vp-status--${ann.status}`">
             {{ statusLabel(ann.status) }}
           </span>
@@ -242,6 +299,29 @@ function statusLabel(status: Annotation['status']): string {
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin-bottom: 4px;
+  cursor: text;
+  border-radius: 4px;
+  padding: 1px 2px;
+  margin: -1px -2px 4px;
+}
+.vp-panel-item-feedback:hover {
+  background: var(--vp-border, #334155);
+}
+
+.vp-panel-item-edit {
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--vp-text, #e2e8f0);
+  background: var(--vp-bg, #1e1e2e);
+  border: 1px solid var(--vp-accent, #60a5fa);
+  border-radius: 4px;
+  padding: 4px 6px;
+  margin-bottom: 4px;
+  width: 100%;
+  resize: vertical;
+  line-height: 1.4;
+  outline: none;
+  box-sizing: border-box;
 }
 
 .vp-panel-item-status {

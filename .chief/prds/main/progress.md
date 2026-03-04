@@ -414,3 +414,19 @@
   - Use a `data-*` attribute on the injected style element for easy identification and cleanup
   - Storing the style element reference in a module-level `let` (not a `ref`) avoids unnecessary reactivity for DOM elements that don't need to trigger re-renders
 ---
+
+## 2026-03-04 - US-019
+- Added inline editing to AnnotationPanel.vue — double-click feedback text to enter edit mode
+- Edit mode renders a `<textarea>` with the current feedback text, auto-focused and selected
+- Save on blur or Enter (non-shift); cancel on Escape — uses `store.update(id, { feedback })` which auto-sets `updatedAt`
+- Hover effect on feedback text hints at editability (subtle background highlight + `cursor: text`)
+- Edit textarea styled to match panel theme (CSS vars for colors, accent border for focus indication)
+- `@click.stop` on textarea and `@dblclick.stop` on feedback text prevent scroll-to-element from firing during editing
+- Markdown output automatically reflects changes because `store.update()` mutates the reactive annotation array
+- Typecheck passes clean
+- Files changed: AnnotationPanel.vue (script: edit state + handlers, template: conditional textarea/text, styles: edit + hover), prd.json, progress.md
+- **Learnings for future iterations:**
+  - Vue's `ref` on a `v-if` element needs `nextTick` before accessing — the DOM element doesn't exist until the next render cycle
+  - `@blur` fires before `@keydown` Enter in some browsers — saving on both is safe because `saveEdit()` is idempotent (clears `editingId` on first call)
+  - `@click.stop` on the textarea prevents the parent `@click` (scroll-to-element) from firing during text editing
+---
