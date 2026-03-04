@@ -223,3 +223,36 @@ VUEEOF
 fi
 
 echo ""
+
+# ── Phase 5: Patch vite.config.ts ─────────────────────────────────────────────
+info "Configuring Vite..."
+
+if grep -q 'vite-plugin-vuepoint' vite.config.ts 2>/dev/null; then
+  skip "vite.config.ts already has vuePoint plugin"
+else
+  # Add import line after the last existing import
+  sed -i '' '/^import.*from/!b;:a;n;/^import.*from/ba;i\
+import vuePoint from '\''vite-plugin-vuepoint'\'';
+' vite.config.ts
+
+  # Add vuePoint() to the plugins array
+  sed -i '' 's/plugins: \[/plugins: [vuePoint(), /' vite.config.ts
+
+  ok "Added vuePoint plugin to vite.config.ts"
+fi
+
+# ── Phase 6: Add dev script ───────────────────────────────────────────────────
+if node -e "const p=JSON.parse(require('fs').readFileSync('package.json','utf8')); process.exit(p.scripts?.dev ? 0 : 1)" 2>/dev/null; then
+  skip "\"dev\" script already exists in package.json"
+else
+  node -e "
+    const fs = require('fs');
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    if (!pkg.scripts) pkg.scripts = {};
+    pkg.scripts.dev = 'vite';
+    fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+  "
+  ok "Added \"dev\": \"vite\" script to package.json"
+fi
+
+echo ""
