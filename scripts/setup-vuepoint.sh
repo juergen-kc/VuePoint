@@ -133,3 +133,93 @@ pnpm install || fail "pnpm install failed"
 ok "Dependencies installed"
 
 echo ""
+
+# ── Phase 4: Create app shell ─────────────────────────────────────────────────
+info "Creating app shell..."
+
+# index.html
+if [[ -f index.html ]]; then
+  skip "index.html already exists"
+else
+  cat > index.html << 'HTMLEOF'
+<!DOCTYPE html>
+<html lang="en" data-theme="circuit-light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Circuit Playground</title>
+  </head>
+  <body class="bg-neutral-base">
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+HTMLEOF
+  ok "Created index.html"
+fi
+
+# src/main.ts
+if [[ -f src/main.ts ]]; then
+  skip "src/main.ts already exists"
+else
+  cat > src/main.ts << 'TSEOF'
+import { createApp } from 'vue'
+import PrimeVue from 'primevue/config'
+import ToastService from 'primevue/toastservice'
+import Tooltip from 'primevue/tooltip'
+import circuitConfig from '@jumpcloud/circuit/primevue'
+import App from './App.vue'
+import './assets/main.css'
+import '@vuepoint/vue/dist/vue.css'
+
+const app = createApp(App)
+
+app.use(PrimeVue, {
+  ...circuitConfig,
+  theme: 'none',
+})
+app.use(ToastService)
+app.directive('tooltip', Tooltip)
+
+app.config.globalProperties.$testId = (suffix: string) => suffix
+
+app.mount('#app')
+TSEOF
+  ok "Created src/main.ts"
+fi
+
+# src/App.vue
+if [[ -f src/App.vue ]]; then
+  skip "src/App.vue already exists"
+else
+  cat > src/App.vue << 'VUEEOF'
+<script setup lang="ts">
+import TopBar from './components/TopBar.vue'
+import ListPageLayout from './components/layout/page-layouts/ListPageLayout.vue'
+import Button from 'primevue/button'
+</script>
+
+<template>
+  <div class="h-screen flex flex-col">
+    <TopBar />
+    <ListPageLayout>
+      <div class="space-y-6">
+        <h1 class="text-heading-lg text-content-primary">Circuit Playground</h1>
+        <p class="text-body-md text-content-secondary">
+          A live preview of Circuit DS components with VuePoint annotations enabled.
+        </p>
+        <div class="flex gap-3">
+          <Button label="Primary" severity="primary" />
+          <Button label="Secondary" severity="secondary" />
+          <Button label="Danger" severity="danger" />
+          <Button label="Outlined" severity="secondary" variant="outlined" />
+        </div>
+      </div>
+    </ListPageLayout>
+  </div>
+</template>
+VUEEOF
+  ok "Created src/App.vue"
+fi
+
+echo ""
