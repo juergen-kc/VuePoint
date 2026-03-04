@@ -470,3 +470,23 @@
   - Walking the full instance chain (not just the leaf) is important because parent components often fetch data via stores that children render
   - The fallback to all stores ensures no regression for edge cases (stores via provide/inject, global imports without binding)
 ---
+
+## 2026-03-04 - US-022
+- Implemented opt-in screenshot capture per annotation using html2canvas
+- Added `screenshot?: { enabled: boolean }` to `VuePointOptions` in types.ts
+- Installed `html2canvas` as a dependency of `@vuepoint/vue`
+- `captureScreenshot()` in VuePointToolbar.vue uses html2canvas to render the annotated element as Base64 PNG
+- html2canvas configured with: `useCORS: true`, Retina-aware scale, VuePoint UI excluded via `ignoreElements`
+- `submitAnnotation()` made async to await screenshot capture; button shows "Capturing…" during capture
+- Screenshot stored in annotation's `screenshot` field (already part of the type from initial design)
+- AnnotationPanel.vue shows thumbnail (max-height 80px) with click-to-expand to full-size overlay
+- REST API and webhook payloads automatically include screenshot via spread (no changes needed)
+- Markdown output already supported screenshots via `includeScreenshot` option in output.ts
+- Typecheck passes clean; build succeeds
+- Files changed: types.ts (screenshot config), VuePointToolbar.vue (capture logic + async submit + UI), AnnotationPanel.vue (thumbnail + expanded view), packages/vue/package.json (+html2canvas), pnpm-lock.yaml, prd.json, progress.md
+- **Learnings for future iterations:**
+  - html2canvas's `ignoreElements` callback is essential for excluding VuePoint's own UI from screenshots
+  - `submitAnnotation` became `async` — Vue event handlers can be async without issues, but the button should be disabled during capture to prevent double-submission
+  - The `screenshot` field was pre-wired across types, store, and output formatter — a good example of interface-first design reducing implementation effort
+  - Base64 PNG screenshots can be large (100KB+) — the opt-in design is important to avoid bloating WebSocket/webhook payloads
+---

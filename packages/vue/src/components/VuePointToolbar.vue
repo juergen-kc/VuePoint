@@ -13,6 +13,7 @@
  */
 
 import { ref, computed, onMounted, onUnmounted, defineOptions } from 'vue'
+import html2canvas from 'html2canvas'
 
 defineOptions({ name: 'VuePointToolbar' })
 import type { VuePointOptions, AnnotationElement, AnnotationRect } from '@vuepoint/core'
@@ -363,9 +364,33 @@ function isVuePointElement(el: Element): boolean {
   return !!el.closest('[data-vuepoint="true"]')
 }
 
+// ─── Screenshot capture ──────────────────────────────────────────────────────
+
+const isCapturingScreenshot = ref(false)
+
+async function captureScreenshot(el: Element): Promise<string | undefined> {
+  if (!props.options.screenshot?.enabled) return undefined
+  try {
+    isCapturingScreenshot.value = true
+    const canvas = await html2canvas(el as HTMLElement, {
+      useCORS: true,
+      allowTaint: false,
+      scale: window.devicePixelRatio > 1 ? 2 : 1,
+      logging: false,
+      ignoreElements: (element: Element) => isVuePointElement(element),
+    })
+    return canvas.toDataURL('image/png')
+  } catch {
+    // Screenshot capture failed — non-critical, continue without it
+    return undefined
+  } finally {
+    isCapturingScreenshot.value = false
+  }
+}
+
 // ─── Annotation creation ──────────────────────────────────────────────────────
 
-function submitAnnotation() {
+async function submitAnnotation() {
   if (!pendingElement.value || !feedbackText.value.trim()) return
 
   const el = pendingElement.value
@@ -414,6 +439,9 @@ function submitAnnotation() {
     elementDescription = describeElement(el)
   }
 
+  // Capture screenshot (opt-in — async, non-blocking on failure)
+  const screenshot = await captureScreenshot(el)
+
   props.annotationsStore.create({
     selector,
     elementDescription,
@@ -427,6 +455,7 @@ function submitAnnotation() {
     feedback: feedbackText.value.trim(),
     expected: expectedText.value.trim() || undefined,
     actual: actualText.value.trim() || undefined,
+    screenshot,
   })
 
   feedbackText.value = ''
@@ -614,10 +643,10 @@ function getCurrentRoute(): string | undefined {
           <button class="vp-btn-secondary" @click="cancelAnnotation">Cancel</button>
           <button
             class="vp-btn-primary"
-            :disabled="!feedbackText.trim()"
+            :disabled="!feedbackText.trim() || isCapturingScreenshot"
             @click="submitAnnotation"
           >
-            Add Annotation
+            {{ isCapturingScreenshot ? 'Capturing…' : 'Add Annotation' }}
           </button>
         </div>
       </div>

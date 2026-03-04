@@ -144,6 +144,10 @@ export interface VuePointOptions {
     authToken?: string
     cors?: string[] // allowed origins
   }
+  /** Screenshot capture — opt-in (not captured by default to avoid performance overhead) */
+  screenshot?: {
+    enabled: boolean
+  }
   /** Outbound webhooks */
   webhooks?: WebhookConfig[]
   /** App metadata included in webhook payloads */

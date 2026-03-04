@@ -22,6 +22,10 @@ const emit = defineEmits<{
   'reply-question': [id: string, reply: string]
 }>()
 
+// ─── Screenshot expand ──────────────────────────────────────────────────────
+
+const expandedScreenshot = ref<string | null>(null)
+
 // ─── Inline Editing ─────────────────────────────────────────────────────────
 
 const editingId = ref<string | null>(null)
@@ -182,6 +186,22 @@ function statusLabel(status: Annotation['status']): string {
             title="Double-click to edit"
             @dblclick.stop="startEditing(ann)"
           >{{ ann.feedback }}</div>
+          <!-- Screenshot thumbnail -->
+          <div v-if="ann.screenshot" class="vp-screenshot-thumb" @click.stop>
+            <img
+              :src="ann.screenshot"
+              alt="Screenshot"
+              class="vp-screenshot-img"
+              @click="expandedScreenshot = expandedScreenshot === ann.id ? null : ann.id"
+            />
+            <img
+              v-if="expandedScreenshot === ann.id"
+              :src="ann.screenshot"
+              alt="Screenshot (full)"
+              class="vp-screenshot-full"
+              @click="expandedScreenshot = null"
+            />
+          </div>
           <span class="vp-panel-item-status" :class="`vp-status--${ann.status}`">
             {{ statusLabel(ann.status) }}
           </span>
@@ -438,6 +458,41 @@ function statusLabel(status: Annotation['status']): string {
 .vp-panel-item-delete:hover {
   color: #ef4444;
   background: rgba(239, 68, 68, 0.1);
+}
+
+/* ── Screenshot thumbnail ────────────────────────────────────────────────── */
+.vp-screenshot-thumb {
+  position: relative;
+  margin: 4px 0;
+}
+
+.vp-screenshot-img {
+  max-width: 100%;
+  max-height: 80px;
+  border-radius: 4px;
+  border: 1px solid var(--vp-border, #334155);
+  cursor: pointer;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.15s;
+}
+.vp-screenshot-img:hover {
+  opacity: 0.85;
+}
+
+.vp-screenshot-full {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 8px;
+  border: 2px solid var(--vp-border, #334155);
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+  z-index: 2147483647;
+  cursor: pointer;
+  background: var(--vp-bg, #1e1e2e);
 }
 
 /* ── Agent question block ────────────────────────────────────────────────── */
