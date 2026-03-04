@@ -16,8 +16,7 @@
         "Cross-package imports (@vuepoint/core from @vuepoint/vue) resolve correctly in TypeScript"
       ],
       "priority": 1,
-      "passes": true,
-      "inProgress": true
+      "passes": true
     },
     {
       "id": "US-002",
@@ -33,7 +32,7 @@
         "pnpm typecheck passes across all packages"
       ],
       "priority": 1,
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-003",
