@@ -23,6 +23,8 @@
 - Use `nextTick` in plugin `install()` to defer access to `$router` / Pinia — handles any plugin registration order
 - Pinia stores have `$id` property — use this to detect store references in Vue component `setupState`
 - ESLint: flat config with `no-undef: off` for TS projects; use `flat/essential` for Vue plugin to avoid template formatting noise
+- Chrome extension (MV3): IIFE format required; use separate Vite builds per entry via `VITE_ENTRY` env var
+- Packages with platform-specific types (e.g., `@types/chrome`) must be excluded from root tsconfig to avoid polluting other packages
 - Quality scripts: `pnpm typecheck`, `pnpm lint`, `pnpm test` — all must pass for CI
 - Vitest config at root with `passWithNoTests: true` until test files are added
 
@@ -602,4 +604,26 @@
   - happy-dom is needed for DOM-based tests (selector.ts); Vue reactivity works out of the box with vitest
   - When testing `generateSelector`, the target element's selector must NOT be unique by itself — duplicate elements in DOM fixtures force the algorithm to climb the tree
   - Test files must be colocated with source files matching `packages/*/src/**/*.{test,spec}.ts` per vitest.config.ts
+---
+
+## 2026-03-04 - US-034
+- Implemented Chrome browser extension (Manifest V3) in `packages/extension/`
+- Files created:
+  - `manifest.json` — MV3 manifest with permissions for storage, activeTab, scripting
+  - `src/background.ts` — Service worker managing injection state, settings storage, and tab lifecycle
+  - `src/content.ts` — Content script (ISOLATED world) that polls for Vue 3 apps via `__vue_app__` on root elements
+  - `src/inject.ts` — Page-context script (MAIN world) that installs VuePoint toolbar onto detected Vue app
+  - `src/popup/popup.html`, `popup.css`, `popup.ts` — Config UI for MCP port, API port, auth token, auto-inject toggle
+  - `src/env.d.ts` — Vue SFC type shim for extension tsconfig
+  - `vite.config.ts` — Multi-entry build (IIFE format, one entry per VITE_ENTRY env var)
+  - `scripts/build.mjs` — Orchestrates four vite build passes + copies static assets
+  - `icons/` — Generated PNG icons (16, 48, 128px)
+- Modified `tsconfig.json` to exclude `packages/extension/**` from root typecheck (extension has its own tsconfig with `@types/chrome`)
+- **Learnings for future iterations:**
+  - Chrome extensions (MV3) need IIFE format bundles — Vite's lib mode with `formats: ['iife']` handles this
+  - IIFE format doesn't support multiple entry points in a single build — use separate builds via env var
+  - Extension content scripts run in ISOLATED world by default; use `chrome.scripting.executeScript` with `world: 'MAIN'` to access page JS context
+  - VuePoint's toolbar runs as an isolated Vue app — bundling a separate Vue copy works fine since the toolbar doesn't share reactivity with the host app
+  - `__vueParentComponent` on DOM elements is accessible regardless of which Vue runtime copy reads it
+  - Packages with Chrome-specific types (`@types/chrome`) should be excluded from root tsconfig to avoid polluting other packages' type environments
 ---
