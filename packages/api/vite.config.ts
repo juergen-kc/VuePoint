@@ -12,6 +12,7 @@ export default defineConfig({
         '@vuepoint/core',
         'fastify',
         '@fastify/cors',
+        '@fastify/websocket',
         'node:crypto',
       ],
     },
