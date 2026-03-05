@@ -246,14 +246,18 @@ info "Configuring Vite..."
 if grep -q 'vite-plugin-vuepoint' vite.config.ts 2>/dev/null; then
   skip "vite.config.ts already has vuePoint plugin"
 else
-  # Add import line after the last existing import
-  sed -i '' '/^import.*from/!b;:a;n;/^import.*from/ba;i\
-import vuePoint from '\''vite-plugin-vuepoint'\'';
-' vite.config.ts
-
-  # Add vuePoint() to the plugins array
-  sed -i '' 's/plugins: \[/plugins: [vuePoint(), /' vite.config.ts
-
+  node -e "
+    const fs = require('fs');
+    let src = fs.readFileSync('vite.config.ts', 'utf8');
+    // Add import after the last existing import line
+    const importLine = \"import vuePoint from 'vite-plugin-vuepoint';\";
+    const lastImport = src.lastIndexOf('import ');
+    const lineEnd = src.indexOf('\n', lastImport);
+    src = src.slice(0, lineEnd + 1) + importLine + '\n' + src.slice(lineEnd + 1);
+    // Add vuePoint() to the plugins array
+    src = src.replace('plugins: [', 'plugins: [vuePoint(), ');
+    fs.writeFileSync('vite.config.ts', src);
+  "
   ok "Added vuePoint plugin to vite.config.ts"
 fi
 
