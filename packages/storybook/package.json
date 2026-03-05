@@ -12,6 +12,10 @@
       "types": "./dist/preset.d.ts",
       "import": "./dist/preset.js",
       "require": "./dist/preset.cjs"
+    },
+    "./dist/preview": {
+      "import": "./dist/preview.js",
+      "require": "./dist/preview.cjs"
     }
   },
   "main": "./dist/index.cjs",
