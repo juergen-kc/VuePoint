@@ -277,7 +277,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport()
   await server.connect(transport)
-  console.error('[VuePoint MCP] Server running on stdio')
+  console.error(`[VuePoint MCP] Server running on stdio, API: ${BRIDGE_URL}`)
 }
 
 main().catch((err) => {

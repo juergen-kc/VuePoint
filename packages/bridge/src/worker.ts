@@ -29,7 +29,7 @@ let appContext: AppContext = {}
 let tabCounter = 0
 
 // API server URL
-const apiBaseUrl = 'http://127.0.0.1:3742'
+const apiBaseUrl = 'http://localhost:3742'
 let wsConnection: WebSocket | null = null
 let wsReconnectTimer: ReturnType<typeof setTimeout> | null = null
 
