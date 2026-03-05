@@ -123,9 +123,12 @@ else
   ok "Added pnpm.overrides for @vuepoint/* packages"
 fi
 
-# Install runtime packages
-if grep -q '"@vuepoint/vue"' package.json 2>/dev/null; then
-  skip "@vuepoint/vue already in package.json"
+# Install runtime packages (check all three — a partial prior run may have added some but not all)
+if grep -q '"@vuepoint/vue"' package.json 2>/dev/null \
+  && grep -q '"vite-plugin-vuepoint"' package.json 2>/dev/null \
+  && [[ -d node_modules/@vuepoint/vue ]] \
+  && [[ -d node_modules/vite-plugin-vuepoint ]]; then
+  skip "Runtime packages already installed"
 else
   pnpm add \
     "./$TARBALL_DIR/vuepoint-core-0.1.0.tgz" \
