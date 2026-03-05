@@ -26,12 +26,7 @@ Add to your Claude Code MCP configuration:
 {
   "mcpServers": {
     "vuepoint": {
-      "command": "npx",
-      "args": ["vuepoint", "mcp"],
-      "env": {
-        "VUEPOINT_BRIDGE_URL": "http://localhost:3742",
-        "VUEPOINT_AUTH_TOKEN": "optional"
-      }
+      "command": "./node_modules/.bin/vuepoint-mcp"
     }
   }
 }
@@ -45,15 +40,14 @@ Add to `.cursor/mcp.json`:
 {
   "mcpServers": {
     "vuepoint": {
-      "command": "npx",
-      "args": ["vuepoint", "mcp"],
-      "env": {
-        "VUEPOINT_BRIDGE_URL": "http://localhost:3742"
-      }
+      "command": "./node_modules/.bin/vuepoint-mcp"
     }
   }
 }
 ```
+
+> **Note:** The VuePoint API server must be running for MCP tools to find annotations.
+> Start it in a separate terminal: `pnpm dev:vuepoint-api`
 
 ## Available Tools
 
@@ -161,13 +155,13 @@ If the agent needs more context:
 ## Architecture
 
 ```
-Browser Tabs ──postMessage──→ SharedWorker (port 3742)
-                                    ↑
-                              HTTP / fetch
-                                    ↑
-                            MCP Server (stdio)
-                                    ↑
-                            AI Agent (Claude Code)
+Browser Tabs ──postMessage──→ SharedWorker ──fetch()──→ API Server (:3742)
+                                                              ↑
+                                                        HTTP / fetch
+                                                              ↑
+                                                      MCP Server (stdio)
+                                                              ↑
+                                                      AI Agent (Claude/Cursor)
 ```
 
-The SharedWorker acts as the bridge between the browser and the MCP server. Multiple browser tabs share the same worker instance and annotation state.
+The SharedWorker holds canonical annotation state and syncs it to the API server via HTTP. The MCP server reads/writes annotations through the same API. Multiple browser tabs share the same worker instance.

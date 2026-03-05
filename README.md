@@ -101,15 +101,13 @@ Add to your `.claude/mcp.json` (or equivalent Cursor config):
 {
   "mcpServers": {
     "vuepoint": {
-      "command": "node",
-      "args": ["node_modules/@vuepoint/mcp/dist/server.js"],
-      "env": {
-        "VUEPOINT_BRIDGE_URL": "http://localhost:3742"
-      }
+      "command": "./node_modules/.bin/vuepoint-mcp"
     }
   }
 }
 ```
+
+> **Prerequisite:** The VuePoint API server must be running: `pnpm dev:vuepoint-api`
 
 ---
 

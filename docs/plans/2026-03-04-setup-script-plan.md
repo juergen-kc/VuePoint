@@ -258,7 +258,7 @@ import Tooltip from 'primevue/tooltip'
 import circuitConfig from '@jumpcloud/circuit/primevue'
 import App from './App.vue'
 import './assets/main.css'
-import '@vuepoint/vue/dist/vue.css'
+import '@vuepoint/vue/style.css'
 
 const app = createApp(App)
 
