@@ -95,11 +95,6 @@ info "Installing VuePoint packages..."
 # Patch package.json: add pnpm.overrides for all @vuepoint/* inter-dependencies BEFORE pnpm add
 # These packages use workspace:* refs which become version numbers in tarballs,
 # but none of them are published to npm — override resolves them from local tarballs
-EXPECTED_OVERRIDES='{
-  "@vuepoint/core": "file:.vuepoint/vuepoint-core-0.1.0.tgz",
-  "@vuepoint/bridge": "file:.vuepoint/vuepoint-core-0.1.0.tgz",
-  "@vuepoint/vue": "file:.vuepoint/vuepoint-vue-0.1.0.tgz"
-}'
 if node -e "
   const p=JSON.parse(require('fs').readFileSync('package.json','utf8'));
   const o = p.pnpm?.overrides || {};
@@ -283,8 +278,9 @@ fi
 echo ""
 
 # ── Phase 7: Done ─────────────────────────────────────────────────────────────
-# Clean up tarballs
-rm -rf "$TARBALL_DIR"
+# NOTE: Do NOT delete .vuepoint/ — package.json pnpm.overrides reference tarballs
+# via file: protocol. Removing them breaks future `pnpm install` runs.
+# The directory is already gitignored.
 
 echo ""
 printf '\033[1;32m══════════════════════════════════════════════════\033[0m\n'
