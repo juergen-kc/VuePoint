@@ -92,21 +92,35 @@ echo ""
 # ── Phase 3: Install dependencies ─────────────────────────────────────────────
 info "Installing VuePoint packages..."
 
-# Patch package.json: add pnpm.overrides for @vuepoint/bridge BEFORE pnpm add
-# (@vuepoint/vue depends on @vuepoint/bridge which isn't published — override resolves it from the local tarball)
-BRIDGE_OVERRIDE="file:$TARBALL_DIR/vuepoint-core-0.1.0.tgz"
-if node -e "const p=JSON.parse(require('fs').readFileSync('package.json','utf8')); process.exit(p.pnpm?.overrides?.['@vuepoint/bridge'] === '$BRIDGE_OVERRIDE' ? 0 : 1)" 2>/dev/null; then
-  skip "pnpm.overrides for @vuepoint/bridge already set"
+# Patch package.json: add pnpm.overrides for all @vuepoint/* inter-dependencies BEFORE pnpm add
+# These packages use workspace:* refs which become version numbers in tarballs,
+# but none of them are published to npm — override resolves them from local tarballs
+EXPECTED_OVERRIDES='{
+  "@vuepoint/core": "file:.vuepoint/vuepoint-core-0.1.0.tgz",
+  "@vuepoint/bridge": "file:.vuepoint/vuepoint-core-0.1.0.tgz",
+  "@vuepoint/vue": "file:.vuepoint/vuepoint-vue-0.1.0.tgz"
+}'
+if node -e "
+  const p=JSON.parse(require('fs').readFileSync('package.json','utf8'));
+  const o = p.pnpm?.overrides || {};
+  const ok = o['@vuepoint/core']?.startsWith('file:') &&
+             o['@vuepoint/bridge']?.startsWith('file:') &&
+             o['@vuepoint/vue']?.startsWith('file:');
+  process.exit(ok ? 0 : 1);
+" 2>/dev/null; then
+  skip "pnpm.overrides for @vuepoint/* already set"
 else
   node -e "
     const fs = require('fs');
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     if (!pkg.pnpm) pkg.pnpm = {};
     if (!pkg.pnpm.overrides) pkg.pnpm.overrides = {};
-    pkg.pnpm.overrides['@vuepoint/bridge'] = '$BRIDGE_OVERRIDE';
+    pkg.pnpm.overrides['@vuepoint/core'] = 'file:.vuepoint/vuepoint-core-0.1.0.tgz';
+    pkg.pnpm.overrides['@vuepoint/bridge'] = 'file:.vuepoint/vuepoint-core-0.1.0.tgz';
+    pkg.pnpm.overrides['@vuepoint/vue'] = 'file:.vuepoint/vuepoint-vue-0.1.0.tgz';
     fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
   "
-  ok "Added pnpm.overrides for @vuepoint/bridge"
+  ok "Added pnpm.overrides for @vuepoint/* packages"
 fi
 
 # Install runtime packages
