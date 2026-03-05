@@ -392,7 +392,7 @@ Update `src/main.ts` to pass MCP/API options:
 import { VuePoint } from '@vuepoint/vue'
 
 app.use(VuePoint, {
-  mcp: { enabled: true, port: 3741 },
+  mcp: { enabled: true, port: 3742 },
   api: { enabled: true, port: 3742 },
 })
 app.mount('#app')
@@ -401,7 +401,7 @@ app.mount('#app')
 > **If you're using the Vite plugin (recommended):** pass options to the plugin in `vite.config.ts` instead:
 > ```ts
 > vuePoint({
->   mcp: { enabled: true, port: 3741 },
+>   mcp: { enabled: true, port: 3742 },
 >   api: { enabled: true, port: 3742 },
 > })
 > ```
@@ -414,11 +414,7 @@ Add to your Claude Code MCP settings (`.claude/settings.json` or via the UI):
 {
   "mcpServers": {
     "vuepoint": {
-      "command": "npx",
-      "args": ["vuepoint-mcp"],
-      "env": {
-        "VUEPOINT_BRIDGE_URL": "http://localhost:3741"
-      }
+      "command": "./node_modules/.bin/vuepoint-mcp"
     }
   }
 }
@@ -432,11 +428,7 @@ Add to `.cursor/mcp.json` in your project root:
 {
   "mcpServers": {
     "vuepoint": {
-      "command": "npx",
-      "args": ["vuepoint-mcp"],
-      "env": {
-        "VUEPOINT_BRIDGE_URL": "http://localhost:3741"
-      }
+      "command": "./node_modules/.bin/vuepoint-mcp"
     }
   }
 }
@@ -528,8 +520,8 @@ If two elements have the same tag/classes (e.g., multiple "admin" badges in a ta
 ### MCP server can't connect
 
 - Make sure the playground is running (`pnpm dev`)
-- Make sure you enabled `mcp: { enabled: true, port: 3741 }` in the plugin options
-- Check that port 3741 isn't blocked by a firewall
+- Make sure you enabled `mcp: { enabled: true, port: 3742 }` in the plugin options
+- Check that port 3742 isn't blocked by a firewall
 - In Claude Code, check the MCP server logs for connection errors
 
 ### Storybook still works?

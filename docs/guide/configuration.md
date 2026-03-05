@@ -30,7 +30,7 @@ app.use(VuePoint, {
   // MCP bridge (SharedWorker ↔ MCP server)
   mcp: {
     enabled: true,
-    port: 3741,           // bridge HTTP port
+    port: 3742,           // bridge HTTP port
     authToken: 'secret',  // optional Bearer token
   },
 

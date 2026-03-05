@@ -10,7 +10,7 @@
  *
  * Run: node packages/api/dist/api.js
  * Port: VUEPOINT_API_PORT (default 3742) for external REST
- *       VUEPOINT_BRIDGE_PORT (default 3741) for MCP bridge (same server, path-routed)
+ *       MCP server connects to this same port via VUEPOINT_BRIDGE_URL
  */
 
 import Fastify from 'fastify'

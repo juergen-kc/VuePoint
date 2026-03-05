@@ -9,7 +9,7 @@
  *
  * Or configured to auto-start via plugin options.
  * The server communicates with the browser-side SharedWorker via a local
- * HTTP bridge on a fixed port (default: 3741).
+ * HTTP bridge on a fixed port (default: 3742).
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
@@ -20,7 +20,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 
-const BRIDGE_URL = process.env.VUEPOINT_BRIDGE_URL ?? 'http://localhost:3741'
+const BRIDGE_URL = process.env.VUEPOINT_BRIDGE_URL ?? 'http://localhost:3742'
 const AUTH_TOKEN = process.env.VUEPOINT_AUTH_TOKEN
 
 // ─── HTTP bridge client (talks to the SharedWorker proxy) ────────────────────

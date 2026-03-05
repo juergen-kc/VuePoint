@@ -49,7 +49,7 @@ if (!(window as unknown as Record<string, unknown>).__VUEPOINT_INJECTED__) {
   }
 
   let settings: { mcpPort: number; apiPort: number; authToken: string } = {
-    mcpPort: 3741,
+    mcpPort: 3742,
     apiPort: 3742,
     authToken: '',
   }

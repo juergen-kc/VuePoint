@@ -18,7 +18,7 @@ const messageEl = document.getElementById('message') as HTMLDivElement
 
 chrome.runtime.sendMessage({ type: 'get-settings' }, (settings) => {
   if (settings) {
-    mcpPortInput.value = String(settings.mcpPort ?? 3741)
+    mcpPortInput.value = String(settings.mcpPort ?? 3742)
     apiPortInput.value = String(settings.apiPort ?? 3742)
     authTokenInput.value = settings.authToken ?? ''
     autoInjectCheckbox.checked = settings.autoInject ?? false
@@ -108,7 +108,7 @@ injectBtn.addEventListener('click', async () => {
 
 saveBtn.addEventListener('click', () => {
   const settings = {
-    mcpPort: parseInt(mcpPortInput.value, 10) || 3741,
+    mcpPort: parseInt(mcpPortInput.value, 10) || 3742,
     apiPort: parseInt(apiPortInput.value, 10) || 3742,
     authToken: authTokenInput.value.trim(),
     autoInject: autoInjectCheckbox.checked,

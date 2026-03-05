@@ -27,7 +27,7 @@ export default defineNuxtConfig({
 
     mcp: {
       enabled: true,
-      port: 3741,
+      port: 3742,
     },
 
     api: {

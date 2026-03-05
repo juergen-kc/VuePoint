@@ -74,7 +74,7 @@ app.use(VuePoint, {
   // MCP server for Claude Code / Cursor (runs alongside your dev server)
   mcp: {
     enabled: true,
-    port: 3741,
+    port: 3742,
   },
 
   // REST API + webhooks
@@ -104,7 +104,7 @@ Add to your `.claude/mcp.json` (or equivalent Cursor config):
       "command": "node",
       "args": ["node_modules/@vuepoint/mcp/dist/server.js"],
       "env": {
-        "VUEPOINT_BRIDGE_URL": "http://localhost:3741"
+        "VUEPOINT_BRIDGE_URL": "http://localhost:3742"
       }
     }
   }

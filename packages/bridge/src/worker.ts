@@ -4,7 +4,7 @@
  * Runs as a SharedWorker in the browser, shared across all tabs of the same origin.
  * Holds canonical annotation state and broadcasts changes to all connected tabs.
  *
- * The worker also syncs state to the HTTP API server (api.ts on localhost:3741)
+ * The worker also syncs state to the HTTP API server (api.ts on localhost:3742)
  * so that the MCP server and external tools can read/write annotations.
  *
  * Architecture:
@@ -29,7 +29,7 @@ let appContext: AppContext = {}
 let tabCounter = 0
 
 // API server URL
-const apiBaseUrl = 'http://127.0.0.1:3741'
+const apiBaseUrl = 'http://127.0.0.1:3742'
 let wsConnection: WebSocket | null = null
 let wsReconnectTimer: ReturnType<typeof setTimeout> | null = null
 

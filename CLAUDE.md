@@ -48,7 +48,7 @@ Test files use `*.test.ts` or `*.spec.ts` convention. DOM tests use `happy-dom` 
 
 ### Data Flow
 ```
-Browser Tab (Vue plugin) → SharedWorker (canonical state) → API server (:3741/:3742)
+Browser Tab (Vue plugin) → SharedWorker (canonical state) → API server (:3742/:3742)
                                                               ↑
                                                          MCP server (stdio) ← Claude/Cursor
 ```

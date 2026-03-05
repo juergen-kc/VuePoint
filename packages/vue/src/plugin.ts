@@ -191,7 +191,7 @@ const VuePoint: Plugin<VuePointOptions | undefined> = {
     console.info(
       '[VuePoint] Initialized. ' +
       `Shortcut: ${shortcut}. ` +
-      (options.mcp?.enabled ? `MCP: port ${options.mcp.port ?? 3741}. ` : '') +
+      (options.mcp?.enabled ? `MCP: port ${options.mcp.port ?? 3742}. ` : '') +
       (options.api?.enabled ? `API: port ${options.api.port ?? 3742}.` : '')
     )
   },

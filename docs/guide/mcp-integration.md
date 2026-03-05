@@ -10,7 +10,7 @@ VuePoint includes an MCP (Model Context Protocol) server that lets AI coding age
 app.use(VuePoint, {
   mcp: {
     enabled: true,
-    port: 3741,           // SharedWorker bridge port
+    port: 3742,           // SharedWorker bridge port
     authToken: 'optional', // Bearer token for auth
   },
 })
@@ -29,7 +29,7 @@ Add to your Claude Code MCP configuration:
       "command": "npx",
       "args": ["vuepoint", "mcp"],
       "env": {
-        "VUEPOINT_BRIDGE_URL": "http://localhost:3741",
+        "VUEPOINT_BRIDGE_URL": "http://localhost:3742",
         "VUEPOINT_AUTH_TOKEN": "optional"
       }
     }
@@ -48,7 +48,7 @@ Add to `.cursor/mcp.json`:
       "command": "npx",
       "args": ["vuepoint", "mcp"],
       "env": {
-        "VUEPOINT_BRIDGE_URL": "http://localhost:3741"
+        "VUEPOINT_BRIDGE_URL": "http://localhost:3742"
       }
     }
   }
@@ -161,7 +161,7 @@ If the agent needs more context:
 ## Architecture
 
 ```
-Browser Tabs ──postMessage──→ SharedWorker (port 3741)
+Browser Tabs ──postMessage──→ SharedWorker (port 3742)
                                     ↑
                               HTTP / fetch
                                     ↑

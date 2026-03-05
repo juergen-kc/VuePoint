@@ -13,7 +13,7 @@ interface VuePointSettings {
 }
 
 const DEFAULT_SETTINGS: VuePointSettings = {
-  mcpPort: 3741,
+  mcpPort: 3742,
   apiPort: 3742,
   authToken: '',
   autoInject: false,
