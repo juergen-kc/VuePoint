@@ -40,6 +40,7 @@ Test files use `*.test.ts` or `*.spec.ts` convention. DOM tests use `happy-dom` 
   ↑
 @vuepoint/mcp (MCP server over stdio, calls API via HTTP — depends on core)
 
+@vuepoint/storybook (Storybook 8 preset — depends on vue, peer: @storybook/vue3)
 @vuepoint/extension (Chrome extension — standalone)
 @vuepoint/dashboard (annotation monitoring UI — standalone Vue app)
 @vuepoint/nuxt (Nuxt 3 module wrapper — depends on vue)
