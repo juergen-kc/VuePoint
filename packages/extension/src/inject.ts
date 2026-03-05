@@ -126,19 +126,11 @@ if (!(window as unknown as Record<string, unknown>).__VUEPOINT_INJECTED__) {
       patchedStore._bridgeSyncing = true
       try {
         switch (event.type) {
+          case 'state':
+            annotationsStore.replaceAll(event.annotations)
+            break
           case 'annotation_created':
-            if (!annotationsStore.getById(event.annotation.id)) {
-              origCreate({
-                selector: event.annotation.selector,
-                elementDescription: event.annotation.elementDescription,
-                componentChain: event.annotation.componentChain,
-                feedback: event.annotation.feedback,
-                piniaStores: event.annotation.piniaStores,
-                route: event.annotation.route,
-                expected: event.annotation.expected,
-                actual: event.annotation.actual,
-              })
-            }
+            annotationsStore.addFromBridge(event.annotation)
             break
           case 'annotation_updated':
             origUpdate(event.annotation.id, event.annotation)

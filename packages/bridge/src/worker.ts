@@ -108,10 +108,12 @@ function handleCommand(fromTabId: string, cmd: BridgeCommand): void {
     }
 
     case 'clear': {
+      const ids = Array.from(annotations.keys())
       annotations.clear()
       broadcast({ type: 'annotations_cleared' }, fromTabId)
-      // Clear all on API — delete each (no bulk endpoint)
-      // For efficiency, just clear via individual DELETEs
+      for (const id of ids) {
+        syncToApi('DELETE', `/api/v1/annotations/${id}`)
+      }
       break
     }
 

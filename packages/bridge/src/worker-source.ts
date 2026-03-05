@@ -85,8 +85,12 @@ function handleCommand(fromTabId, cmd) {
     }
 
     case 'clear': {
+      const ids = Array.from(annotations.keys())
       annotations.clear()
       broadcast({ type: 'annotations_cleared' }, fromTabId)
+      for (const id of ids) {
+        syncToApi('DELETE', '/api/v1/annotations/' + id)
+      }
       break
     }
 

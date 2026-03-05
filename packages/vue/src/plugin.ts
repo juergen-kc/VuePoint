@@ -123,20 +123,13 @@ const VuePoint: Plugin<VuePointOptions | undefined> = {
       patchedStore._bridgeSyncing = true
       try {
         switch (event.type) {
+          case 'state':
+            // Initial state from SharedWorker on connect — hydrate local store
+            annotationsStore.replaceAll(event.annotations)
+            break
           case 'annotation_created':
-            // Only add if we don't already have it (came from another tab)
-            if (!annotationsStore.getById(event.annotation.id)) {
-              origCreate({
-                selector: event.annotation.selector,
-                elementDescription: event.annotation.elementDescription,
-                componentChain: event.annotation.componentChain,
-                feedback: event.annotation.feedback,
-                piniaStores: event.annotation.piniaStores,
-                route: event.annotation.route,
-                expected: event.annotation.expected,
-                actual: event.annotation.actual,
-              })
-            }
+            // Preserve the full annotation object including its ID
+            annotationsStore.addFromBridge(event.annotation)
             break
           case 'annotation_updated':
             origUpdate(event.annotation.id, event.annotation)

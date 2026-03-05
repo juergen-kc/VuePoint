@@ -169,10 +169,10 @@ app.post('/api/v1/annotations', async (req, reply) => {
   }
 
   const ann: Annotation = {
-    id: generateId(),
-    status: 'pending',
-    createdAt: now(),
-    updatedAt: now(),
+    id: body.id || generateId(),
+    status: body.status ?? 'pending',
+    createdAt: body.createdAt ?? now(),
+    updatedAt: body.updatedAt ?? now(),
     selector: body.selector,
     elementDescription: body.elementDescription ?? body.selector,
     componentChain: body.componentChain ?? [],
@@ -181,6 +181,12 @@ app.post('/api/v1/annotations', async (req, reply) => {
     actual: body.actual,
     piniaStores: body.piniaStores,
     route: body.route,
+    elements: body.elements,
+    areaRect: body.areaRect,
+    selectedText: body.selectedText,
+    textSelectionRect: body.textSelectionRect,
+    screenshot: body.screenshot,
+    sfcPath: body.sfcPath,
   }
 
   annotationStore.set(ann.id, ann)

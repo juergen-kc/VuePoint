@@ -9,13 +9,11 @@ import { generateSelector, describeElement } from './selector'
  * This is safe because these are static test fixtures, not user input.
  */
 function setTestDOM(html: string): void {
-  document.body.innerHTML = html // eslint-disable-line no-unsanitized/property
-}
+  document.body.innerHTML = html}
 
 describe('selector.ts', () => {
   beforeEach(() => {
-    document.body.innerHTML = '' // eslint-disable-line no-unsanitized/property
-  })
+    document.body.innerHTML = ''  })
 
   describe('generateSelector()', () => {
     it('uses #id when element has a unique ID', () => {

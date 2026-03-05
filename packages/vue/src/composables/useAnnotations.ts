@@ -90,6 +90,18 @@ export function useAnnotationsStore() {
     })
   }
 
+  /** Add a fully-formed annotation from the bridge (preserves ID, timestamps, all fields) */
+  function addFromBridge(ann: Annotation): void {
+    if (!annotations.value.find((a) => a.id === ann.id)) {
+      annotations.value.push(ann)
+    }
+  }
+
+  /** Replace all annotations (used for initial state hydration from bridge) */
+  function replaceAll(anns: Annotation[]): void {
+    annotations.value = [...anns]
+  }
+
   function clear(): void {
     annotations.value = []
   }
@@ -110,6 +122,8 @@ export function useAnnotationsStore() {
     dismiss,
     remove,
     replyToQuestion,
+    addFromBridge,
+    replaceAll,
     clear,
   }
 }
