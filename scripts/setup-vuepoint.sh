@@ -93,8 +93,9 @@ echo ""
 info "Installing VuePoint packages..."
 
 # Patch package.json: add pnpm.overrides for @vuepoint/bridge BEFORE pnpm add
-# (@vuepoint/vue depends on @vuepoint/bridge which isn't published — override redirects it to @vuepoint/core)
-if node -e "const p=JSON.parse(require('fs').readFileSync('package.json','utf8')); process.exit(p.pnpm?.overrides?.['@vuepoint/bridge'] ? 0 : 1)" 2>/dev/null; then
+# (@vuepoint/vue depends on @vuepoint/bridge which isn't published — override resolves it from the local tarball)
+BRIDGE_OVERRIDE="file:$TARBALL_DIR/vuepoint-core-0.1.0.tgz"
+if node -e "const p=JSON.parse(require('fs').readFileSync('package.json','utf8')); process.exit(p.pnpm?.overrides?.['@vuepoint/bridge'] === '$BRIDGE_OVERRIDE' ? 0 : 1)" 2>/dev/null; then
   skip "pnpm.overrides for @vuepoint/bridge already set"
 else
   node -e "
@@ -102,7 +103,7 @@ else
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     if (!pkg.pnpm) pkg.pnpm = {};
     if (!pkg.pnpm.overrides) pkg.pnpm.overrides = {};
-    pkg.pnpm.overrides['@vuepoint/bridge'] = 'npm:@vuepoint/core@0.1.0';
+    pkg.pnpm.overrides['@vuepoint/bridge'] = '$BRIDGE_OVERRIDE';
     fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
   "
   ok "Added pnpm.overrides for @vuepoint/bridge"
