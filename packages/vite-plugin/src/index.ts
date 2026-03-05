@@ -40,6 +40,11 @@ export default function vuePointPlugin(
       config = resolvedConfig
     },
 
+    // Reset injection flag when Vite re-optimizes deps and triggers a full reload
+    buildStart() {
+      injected = false
+    },
+
     transform(code, id) {
       // Skip node_modules
       if (id.includes('node_modules')) return null
