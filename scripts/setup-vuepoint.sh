@@ -6,14 +6,6 @@ VUEPOINT_VERSION="v0.1.0"
 VUEPOINT_REPO="juergen-kc/VuePoint"
 TARBALL_DIR=".vuepoint"
 
-# Tarball filenames (must match GitHub Release assets)
-TARBALLS=(
-  "vuepoint-core-0.1.0.tgz"
-  "vuepoint-vue-0.1.0.tgz"
-  "vite-plugin-vuepoint-0.1.0.tgz"
-  "vuepoint-mcp-0.1.0.tgz"
-)
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 info()  { printf '\033[1;34m==>\033[0m %s\n' "$1"; }
 ok()    { printf '\033[1;32m ✓\033[0m  %s\n' "$1"; }
@@ -21,13 +13,50 @@ warn()  { printf '\033[1;33m ⚠\033[0m  %s\n' "$1"; }
 fail()  { printf '\033[1;31m ✗\033[0m  %s\n' "$1" >&2; exit 1; }
 skip()  { printf '\033[0;90m →  %s (skipped)\033[0m\n' "$1"; }
 
+# ── Detect project type ──────────────────────────────────────────────────────
+# Storybook projects have a .storybook/ directory with a main config file
+IS_STORYBOOK=false
+STORYBOOK_MAIN=""
+if [[ -f .storybook/main.ts ]]; then
+  IS_STORYBOOK=true
+  STORYBOOK_MAIN=".storybook/main.ts"
+elif [[ -f .storybook/main.js ]]; then
+  IS_STORYBOOK=true
+  STORYBOOK_MAIN=".storybook/main.js"
+elif [[ -f .storybook/main.mts ]]; then
+  IS_STORYBOOK=true
+  STORYBOOK_MAIN=".storybook/main.mts"
+fi
+
+# Select tarballs based on project type
+if $IS_STORYBOOK; then
+  TARBALLS=(
+    "vuepoint-core-0.1.0.tgz"
+    "vuepoint-vue-0.1.0.tgz"
+    "vuepoint-storybook-0.1.0.tgz"
+    "vuepoint-mcp-0.1.0.tgz"
+  )
+else
+  TARBALLS=(
+    "vuepoint-core-0.1.0.tgz"
+    "vuepoint-vue-0.1.0.tgz"
+    "vite-plugin-vuepoint-0.1.0.tgz"
+    "vuepoint-mcp-0.1.0.tgz"
+  )
+fi
+
 # ── Phase 1: Preflight checks ────────────────────────────────────────────────
 info "Checking prerequisites..."
 
-# Must be in circuit-playground
-[[ -f package.json ]] || fail "No package.json found. Run this from inside circuit-playground."
-grep -q '"@jumpcloud/circuit"' package.json || fail "This doesn't look like circuit-playground (no @jumpcloud/circuit dependency)."
-ok "In circuit-playground directory"
+# Must have a package.json
+[[ -f package.json ]] || fail "No package.json found. Run this from inside your project."
+
+if $IS_STORYBOOK; then
+  ok "Storybook project detected ($STORYBOOK_MAIN)"
+else
+  grep -q '"@jumpcloud/circuit"' package.json || fail "This doesn't look like circuit-playground (no @jumpcloud/circuit dependency)."
+  ok "In circuit-playground directory"
+fi
 
 # Node >= 18
 NODE_VERSION=$(node -v 2>/dev/null | sed 's/^v//' | cut -d. -f1)
@@ -116,19 +145,34 @@ else
   ok "Added pnpm.overrides for @vuepoint/* packages"
 fi
 
-# Install runtime packages (check all three — a partial prior run may have added some but not all)
-if grep -q '"@vuepoint/vue"' package.json 2>/dev/null \
-  && grep -q '"vite-plugin-vuepoint"' package.json 2>/dev/null \
-  && [[ -d node_modules/@vuepoint/vue ]] \
-  && [[ -d node_modules/vite-plugin-vuepoint ]]; then
-  skip "Runtime packages already installed"
+if $IS_STORYBOOK; then
+  # ── Storybook path: install preset + deps ─────────────────────────────────
+  if grep -q '"@vuepoint/storybook"' package.json 2>/dev/null \
+    && [[ -d node_modules/@vuepoint/storybook ]]; then
+    skip "Storybook packages already installed"
+  else
+    pnpm add -D \
+      "./$TARBALL_DIR/vuepoint-core-0.1.0.tgz" \
+      "./$TARBALL_DIR/vuepoint-vue-0.1.0.tgz" \
+      "./$TARBALL_DIR/vuepoint-storybook-0.1.0.tgz" \
+      || fail "pnpm add failed. If you see a 401, re-run your CodeArtifact login."
+    ok "Added @vuepoint/core, @vuepoint/vue, @vuepoint/storybook"
+  fi
 else
-  pnpm add \
-    "./$TARBALL_DIR/vuepoint-core-0.1.0.tgz" \
-    "./$TARBALL_DIR/vuepoint-vue-0.1.0.tgz" \
-    "./$TARBALL_DIR/vite-plugin-vuepoint-0.1.0.tgz" \
-    || fail "pnpm add failed. If you see a 401, re-run your CodeArtifact login."
-  ok "Added @vuepoint/core, @vuepoint/vue, vite-plugin-vuepoint"
+  # ── Standalone path: install vite-plugin + deps ───────────────────────────
+  if grep -q '"@vuepoint/vue"' package.json 2>/dev/null \
+    && grep -q '"vite-plugin-vuepoint"' package.json 2>/dev/null \
+    && [[ -d node_modules/@vuepoint/vue ]] \
+    && [[ -d node_modules/vite-plugin-vuepoint ]]; then
+    skip "Runtime packages already installed"
+  else
+    pnpm add \
+      "./$TARBALL_DIR/vuepoint-core-0.1.0.tgz" \
+      "./$TARBALL_DIR/vuepoint-vue-0.1.0.tgz" \
+      "./$TARBALL_DIR/vite-plugin-vuepoint-0.1.0.tgz" \
+      || fail "pnpm add failed. If you see a 401, re-run your CodeArtifact login."
+    ok "Added @vuepoint/core, @vuepoint/vue, vite-plugin-vuepoint"
+  fi
 fi
 
 # Install MCP server as devDependency
@@ -146,14 +190,40 @@ ok "Dependencies installed"
 
 echo ""
 
-# ── Phase 4: Create app shell ─────────────────────────────────────────────────
-info "Creating app shell..."
+if $IS_STORYBOOK; then
+  # ── Phase 4 (Storybook): Patch .storybook/main config ────────────────────
+  info "Configuring Storybook..."
 
-# index.html
-if [[ -f index.html ]]; then
-  skip "index.html already exists"
+  if grep -q '@vuepoint/storybook' "$STORYBOOK_MAIN" 2>/dev/null; then
+    skip "$STORYBOOK_MAIN already has @vuepoint/storybook addon"
+  else
+    node -e "
+      const fs = require('fs');
+      let src = fs.readFileSync('$STORYBOOK_MAIN', 'utf8');
+      // Find the addons array and add @vuepoint/storybook
+      const addonsMatch = src.match(/addons\s*:\s*\[/);
+      if (!addonsMatch) {
+        console.error('Could not find addons array in $STORYBOOK_MAIN');
+        process.exit(1);
+      }
+      const insertPos = addonsMatch.index + addonsMatch[0].length;
+      src = src.slice(0, insertPos) +
+        \"\n    '@vuepoint/storybook',\" +
+        src.slice(insertPos);
+      fs.writeFileSync('$STORYBOOK_MAIN', src);
+    " || fail "Failed to patch $STORYBOOK_MAIN. Add '@vuepoint/storybook' to addons manually."
+    ok "Added @vuepoint/storybook to $STORYBOOK_MAIN addons"
+  fi
+
 else
-  cat > index.html << 'HTMLEOF'
+  # ── Phase 4 (Standalone): Create app shell ────────────────────────────────
+  info "Creating app shell..."
+
+  # index.html
+  if [[ -f index.html ]]; then
+    skip "index.html already exists"
+  else
+    cat > index.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="en" data-theme="circuit-light">
   <head>
@@ -167,14 +237,14 @@ else
   </body>
 </html>
 HTMLEOF
-  ok "Created index.html"
-fi
+    ok "Created index.html"
+  fi
 
-# src/main.ts
-if [[ -f src/main.ts ]]; then
-  skip "src/main.ts already exists"
-else
-  cat > src/main.ts << 'TSEOF'
+  # src/main.ts
+  if [[ -f src/main.ts ]]; then
+    skip "src/main.ts already exists"
+  else
+    cat > src/main.ts << 'TSEOF'
 import { createApp } from 'vue'
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
@@ -196,14 +266,14 @@ app.config.globalProperties.$testId = (suffix: string) => suffix
 
 app.mount('#app')
 TSEOF
-  ok "Created src/main.ts"
-fi
+    ok "Created src/main.ts"
+  fi
 
-# src/App.vue
-if [[ -f src/App.vue ]]; then
-  skip "src/App.vue already exists"
-else
-  cat > src/App.vue << 'VUEEOF'
+  # src/App.vue
+  if [[ -f src/App.vue ]]; then
+    skip "src/App.vue already exists"
+  else
+    cat > src/App.vue << 'VUEEOF'
 <script setup lang="ts">
 import TopBar from './components/TopBar.vue'
 import ListPageLayout from './components/layout/page-layouts/ListPageLayout.vue'
@@ -230,49 +300,50 @@ import Button from 'primevue/button'
   </div>
 </template>
 VUEEOF
-  ok "Created src/App.vue"
+    ok "Created src/App.vue"
+  fi
+
+  echo ""
+
+  # ── Phase 5 (Standalone): Patch vite.config.ts ────────────────────────────
+  info "Configuring Vite..."
+
+  if grep -q 'vite-plugin-vuepoint' vite.config.ts 2>/dev/null; then
+    skip "vite.config.ts already has vuePoint plugin"
+  else
+    node -e "
+      const fs = require('fs');
+      let src = fs.readFileSync('vite.config.ts', 'utf8');
+      // Add import after the last existing import line
+      const importLine = \"import vuePoint from 'vite-plugin-vuepoint';\";
+      const lastImport = src.lastIndexOf('import ');
+      const lineEnd = src.indexOf('\n', lastImport);
+      src = src.slice(0, lineEnd + 1) + importLine + '\n' + src.slice(lineEnd + 1);
+      // Add vuePoint() to the plugins array
+      src = src.replace('plugins: [', 'plugins: [vuePoint(), ');
+      fs.writeFileSync('vite.config.ts', src);
+    "
+    ok "Added vuePoint plugin to vite.config.ts"
+  fi
+
+  # ── Phase 6 (Standalone): Add dev script ──────────────────────────────────
+  if node -e "const p=JSON.parse(require('fs').readFileSync('package.json','utf8')); process.exit(p.scripts?.dev ? 0 : 1)" 2>/dev/null; then
+    skip "\"dev\" script already exists in package.json"
+  else
+    node -e "
+      const fs = require('fs');
+      const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+      if (!pkg.scripts) pkg.scripts = {};
+      pkg.scripts.dev = 'vite';
+      fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+    "
+    ok "Added \"dev\": \"vite\" script to package.json"
+  fi
 fi
 
 echo ""
 
-# ── Phase 5: Patch vite.config.ts ─────────────────────────────────────────────
-info "Configuring Vite..."
-
-if grep -q 'vite-plugin-vuepoint' vite.config.ts 2>/dev/null; then
-  skip "vite.config.ts already has vuePoint plugin"
-else
-  node -e "
-    const fs = require('fs');
-    let src = fs.readFileSync('vite.config.ts', 'utf8');
-    // Add import after the last existing import line
-    const importLine = \"import vuePoint from 'vite-plugin-vuepoint';\";
-    const lastImport = src.lastIndexOf('import ');
-    const lineEnd = src.indexOf('\n', lastImport);
-    src = src.slice(0, lineEnd + 1) + importLine + '\n' + src.slice(lineEnd + 1);
-    // Add vuePoint() to the plugins array
-    src = src.replace('plugins: [', 'plugins: [vuePoint(), ');
-    fs.writeFileSync('vite.config.ts', src);
-  "
-  ok "Added vuePoint plugin to vite.config.ts"
-fi
-
-# ── Phase 6: Add dev script ───────────────────────────────────────────────────
-if node -e "const p=JSON.parse(require('fs').readFileSync('package.json','utf8')); process.exit(p.scripts?.dev ? 0 : 1)" 2>/dev/null; then
-  skip "\"dev\" script already exists in package.json"
-else
-  node -e "
-    const fs = require('fs');
-    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    if (!pkg.scripts) pkg.scripts = {};
-    pkg.scripts.dev = 'vite';
-    fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-  "
-  ok "Added \"dev\": \"vite\" script to package.json"
-fi
-
-echo ""
-
-# ── Phase 7: Done ─────────────────────────────────────────────────────────────
+# ── Done ──────────────────────────────────────────────────────────────────────
 # NOTE: Do NOT delete .vuepoint/ — package.json pnpm.overrides reference tarballs
 # via file: protocol. Removing them breaks future `pnpm install` runs.
 # The directory is already gitignored.
@@ -282,20 +353,37 @@ printf '\033[1;32m════════════════════�
 printf '\033[1;32m  VuePoint installed successfully!\033[0m\n'
 printf '\033[1;32m══════════════════════════════════════════════════\033[0m\n'
 echo ""
-echo "  Next steps:"
-echo ""
-echo "    1. Start the dev server:"
-echo "       pnpm dev"
-echo ""
-echo "    2. Open the URL Vite prints (usually http://localhost:5173)"
-echo ""
-echo "    3. Click the \"Annotate\" button in the bottom-right corner"
-echo ""
-echo "    4. Click any element → describe the issue → submit"
-echo ""
-echo "    5. Click the clipboard icon to copy annotations for AI agents"
-echo ""
-echo "  Keyboard shortcut: Ctrl+Shift+A (Cmd+Shift+A on Mac)"
+
+if $IS_STORYBOOK; then
+  echo "  Next steps:"
+  echo ""
+  echo "    1. Start Storybook:"
+  echo "       pnpm storybook"
+  echo ""
+  echo "    2. Look for the VuePoint FAB (floating button) in the bottom-right corner"
+  echo ""
+  echo "    3. Click \"Annotate\", then click any element in a story"
+  echo ""
+  echo "    4. Describe the issue → submit → copy for AI agents"
+  echo ""
+  echo "  Keyboard shortcut: Ctrl+Shift+A (Cmd+Shift+A on Mac)"
+else
+  echo "  Next steps:"
+  echo ""
+  echo "    1. Start the dev server:"
+  echo "       pnpm dev"
+  echo ""
+  echo "    2. Open the URL Vite prints (usually http://localhost:5173)"
+  echo ""
+  echo "    3. Click the \"Annotate\" button in the bottom-right corner"
+  echo ""
+  echo "    4. Click any element → describe the issue → submit"
+  echo ""
+  echo "    5. Click the clipboard icon to copy annotations for AI agents"
+  echo ""
+  echo "  Keyboard shortcut: Ctrl+Shift+A (Cmd+Shift+A on Mac)"
+fi
+
 echo ""
 echo "  Full guide: https://github.com/juergen-kc/VuePoint/blob/main/docs/guides/circuit-playground-setup.md"
 echo ""
