@@ -32,7 +32,7 @@ setup-vuepoint.sh
 ├── 3. Install dependencies
 │   ├── pnpm add ./tarballs (core, vue, vite-plugin)
 │   ├── pnpm add -D ./tarballs (mcp)
-│   ├── Patch package.json: add pnpm.overrides { "@vuepoint/bridge": "npm:@vuepoint/core@0.1.0" }
+│   ├── Patch package.json: add pnpm.overrides for @vuepoint/core, @vuepoint/bridge, and @vuepoint/vue (file: protocol pointing to local tarballs)
 │   └── pnpm install
 │
 ├── 4. Create app shell (skip if files exist)

@@ -33,26 +33,27 @@ You don't need to understand the code. Here's how to use VuePoint once a develop
 
 ### Install
 
-```bash
-# Via internal git (until private registry is set up)
-npm install git+https://github.com/jumpcloud-internal/vuepoint.git -D
+VuePoint is distributed as tarballs (not yet on npm). For **circuit-playground** users, run the automated setup script:
 
-# Or if using the internal npm registry:
-npm install @jumpcloud/vuepoint -D
+```bash
+# From inside your circuit-playground directory:
+curl -fsSL https://raw.githubusercontent.com/juergen-kc/VuePoint/main/scripts/setup-vuepoint.sh | bash
 ```
+
+See the [Circuit Playground Setup Guide](docs/guides/circuit-playground-setup.md) for manual installation steps or for installing into other projects using the tarball files.
 
 ### Register the plugin
 
 ```ts
 // main.ts
 import { createApp } from 'vue'
-import { VuePoint } from '@jumpcloud/vuepoint'
+import { VuePoint } from '@vuepoint/vue'
 import App from './App.vue'
 
 const app = createApp(App)
 
-// Zero-config — auto-disabled in production
-app.use(VuePoint)
+// enabled: true ensures VuePoint activates in dev mode
+app.use(VuePoint, { enabled: true })
 
 app.mount('#app')
 ```

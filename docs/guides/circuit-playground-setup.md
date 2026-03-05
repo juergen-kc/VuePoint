@@ -125,9 +125,9 @@ pnpm add ./tarballs/vuepoint-core-0.1.0.tgz \
          ./tarballs/vite-plugin-vuepoint-0.1.0.tgz
 ```
 
-### Handle the `@vuepoint/bridge` resolution
+### Handle the `@vuepoint/*` dependency resolution
 
-The `@vuepoint/vue` package lists `@vuepoint/bridge` as a dependency in its `package.json`, but bridge code is actually bundled into the dist — it doesn't need to be installed separately. To prevent pnpm from failing on the unresolvable dependency, add this override to your `package.json`:
+Since none of the `@vuepoint/*` packages are published to npm, pnpm cannot resolve inter-package dependencies on its own. All three `@vuepoint/*` packages need overrides pointing to the local tarballs. Add this to your `package.json`:
 
 ```jsonc
 // package.json
@@ -135,7 +135,9 @@ The `@vuepoint/vue` package lists `@vuepoint/bridge` as a dependency in its `pac
   // ... your existing config ...
   "pnpm": {
     "overrides": {
-      "@vuepoint/bridge": "npm:@vuepoint/core@0.1.0"
+      "@vuepoint/core": "file:vuepoint-core-0.1.0.tgz",
+      "@vuepoint/bridge": "file:vuepoint-core-0.1.0.tgz",
+      "@vuepoint/vue": "file:vuepoint-vue-0.1.0.tgz"
     }
   }
 }
@@ -182,6 +184,7 @@ import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import circuitConfig from '@jumpcloud/circuit/primevue'
+import { VuePoint } from '@vuepoint/vue'
 import App from './App.vue'
 import './assets/main.css'
 
@@ -193,6 +196,7 @@ app.use(PrimeVue, {
 })
 app.use(ToastService)
 app.directive('tooltip', Tooltip)
+app.use(VuePoint, { enabled: true })
 
 // Provide $testId global property used by Circuit custom components
 app.config.globalProperties.$testId = (suffix: string) => suffix
@@ -200,7 +204,7 @@ app.config.globalProperties.$testId = (suffix: string) => suffix
 app.mount('#app')
 ```
 
-> **Why no `app.use(VuePoint)` here?** The Vite plugin handles that automatically — it detects the `createApp()` call and injects VuePoint before `.mount()`. Zero manual setup required.
+> **Note:** The `enabled: true` option ensures VuePoint activates in dev mode. The Vite plugin (`vite-plugin-vuepoint`) is still included for its dev-time features but VuePoint is registered explicitly for reliability.
 
 ### 4c. Create `src/App.vue`
 
