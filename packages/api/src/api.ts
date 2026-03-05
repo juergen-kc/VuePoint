@@ -29,7 +29,7 @@ import { generateId, now } from '@vuepoint/core'
 
 const PORT = Number(process.env.VUEPOINT_API_PORT ?? 3742)
 const AUTH_TOKEN = process.env.VUEPOINT_AUTH_TOKEN
-const CORS_ORIGINS = process.env.VUEPOINT_CORS?.split(',') ?? ['http://localhost:5173', 'http://localhost:3000']
+const CORS_ORIGINS = process.env.VUEPOINT_CORS?.split(',') ?? [/^http:\/\/localhost(:\d+)?$/]
 
 // Webhook configs loaded from env JSON or set via API
 let webhooks: WebhookConfig[] = []
