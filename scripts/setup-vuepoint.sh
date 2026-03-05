@@ -187,6 +187,7 @@ import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import circuitConfig from '@jumpcloud/circuit/primevue'
+import { VuePoint } from '@vuepoint/vue'
 import App from './App.vue'
 import './assets/main.css'
 import '@vuepoint/vue/dist/vue.css'
@@ -199,6 +200,7 @@ app.use(PrimeVue, {
 })
 app.use(ToastService)
 app.directive('tooltip', Tooltip)
+app.use(VuePoint, { enabled: true })
 
 app.config.globalProperties.$testId = (suffix: string) => suffix
 
