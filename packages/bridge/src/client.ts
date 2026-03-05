@@ -14,6 +14,7 @@
 
 import type { Annotation } from '@vuepoint/core'
 import type { BridgeCommand, BridgeEvent, AppContext } from './types.js'
+import { WORKER_SOURCE } from './worker-source.js'
 
 export interface BridgeClientOptions {
   /** URL to the SharedWorker script. Default: auto-resolved */
@@ -61,8 +62,10 @@ export function createBridgeClient(options: BridgeClientOptions = {}): BridgeCli
     }
 
     try {
-      const workerUrl = options.workerUrl ?? new URL('./worker.js', import.meta.url)
-      worker = new SharedWorker(workerUrl, { name: 'vuepoint-bridge', type: 'module' })
+      const workerUrl = options.workerUrl ?? URL.createObjectURL(
+        new Blob([WORKER_SOURCE], { type: 'application/javascript' })
+      )
+      worker = new SharedWorker(workerUrl, { name: 'vuepoint-bridge' })
       port = worker.port
 
       port.addEventListener('message', (ev: MessageEvent<BridgeEvent>) => {
