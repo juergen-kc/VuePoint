@@ -99,7 +99,6 @@ if node -e "
   const p=JSON.parse(require('fs').readFileSync('package.json','utf8'));
   const o = p.pnpm?.overrides || {};
   const ok = o['@vuepoint/core']?.startsWith('file:') &&
-             o['@vuepoint/bridge']?.startsWith('file:') &&
              o['@vuepoint/vue']?.startsWith('file:');
   process.exit(ok ? 0 : 1);
 " 2>/dev/null; then
@@ -111,7 +110,6 @@ else
     if (!pkg.pnpm) pkg.pnpm = {};
     if (!pkg.pnpm.overrides) pkg.pnpm.overrides = {};
     pkg.pnpm.overrides['@vuepoint/core'] = 'file:.vuepoint/vuepoint-core-0.1.0.tgz';
-    pkg.pnpm.overrides['@vuepoint/bridge'] = 'file:.vuepoint/vuepoint-core-0.1.0.tgz';
     pkg.pnpm.overrides['@vuepoint/vue'] = 'file:.vuepoint/vuepoint-vue-0.1.0.tgz';
     fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
   "
@@ -182,10 +180,8 @@ import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import circuitConfig from '@jumpcloud/circuit/primevue'
-import { VuePoint } from '@vuepoint/vue'
 import App from './App.vue'
 import './assets/main.css'
-import '@vuepoint/vue/dist/vue.css'
 
 const app = createApp(App)
 
@@ -195,7 +191,6 @@ app.use(PrimeVue, {
 })
 app.use(ToastService)
 app.directive('tooltip', Tooltip)
-app.use(VuePoint, { enabled: true })
 
 app.config.globalProperties.$testId = (suffix: string) => suffix
 

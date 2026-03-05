@@ -75,8 +75,8 @@ export default function vuePointPlugin(
       const runtimeOptions = { enabled: true, ...vuepointOptions }
       const optionsStr = `, ${JSON.stringify(runtimeOptions)}`
 
-      // Inject import at the top of the file
-      const importLine = `import { VuePoint as __VuePoint__ } from '@vuepoint/vue'\n`
+      // Inject imports at the top of the file
+      const importLine = `import { VuePoint as __VuePoint__ } from '@vuepoint/vue'\nimport '@vuepoint/vue/style.css'\n`
 
       // Inject app.use() right before .mount()
       const mountIndex = mountMatch.index!

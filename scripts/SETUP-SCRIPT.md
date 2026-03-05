@@ -86,8 +86,7 @@ Creates three files if they don't already exist:
 **`src/main.ts`** — Vue app bootstrap that:
 - Configures PrimeVue with Circuit's preset (`@jumpcloud/circuit/primevue`)
 - Registers `ToastService` and `Tooltip` directive (common Circuit patterns)
-- Imports and registers VuePoint with `{ enabled: true }` to bypass the production guard
-- Imports VuePoint's CSS (`@vuepoint/vue/dist/vue.css`) for toolbar styling
+- VuePoint is auto-injected by `vite-plugin-vuepoint` (CSS included) — no manual imports needed
 
 **`src/App.vue`** — Minimal shell using Circuit's `TopBar` and `ListPageLayout` components with sample buttons for immediate visual testing.
 

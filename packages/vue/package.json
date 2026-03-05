@@ -8,6 +8,7 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./style.css": "./dist/vue.css",
     "./dist/vue.css": "./dist/vue.css"
   },
   "main": "./dist/index.cjs",

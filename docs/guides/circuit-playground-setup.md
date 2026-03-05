@@ -275,7 +275,7 @@ The VuePoint toolbar styles are shipped as a separate CSS file. Import it in you
 
 ```ts
 // Add this line after your other imports in src/main.ts
-import '@vuepoint/vue/dist/vue.css'
+import '@vuepoint/vue/style.css'
 ```
 
 ---
@@ -489,7 +489,7 @@ If the agent needs clarification:
 **Most common cause:** The VuePoint CSS isn't loaded. Make sure you have this import in `src/main.ts`:
 
 ```ts
-import '@vuepoint/vue/dist/vue.css'
+import '@vuepoint/vue/style.css'
 ```
 
 **Other causes:**

@@ -23,7 +23,7 @@ Register the plugin in your Vue app entry file:
 // main.ts
 import { createApp } from 'vue'
 import { VuePoint } from '@vuepoint/vue'
-import '@vuepoint/vue/dist/vue.css'
+import '@vuepoint/vue/style.css'
 import App from './App.vue'
 
 const app = createApp(App)
