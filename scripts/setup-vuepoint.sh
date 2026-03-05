@@ -34,6 +34,7 @@ if $IS_STORYBOOK; then
     "vuepoint-core-0.1.0.tgz"
     "vuepoint-vue-0.1.0.tgz"
     "vuepoint-storybook-0.1.0.tgz"
+    "vuepoint-api-0.1.0.tgz"
     "vuepoint-mcp-0.1.0.tgz"
   )
 else
@@ -41,6 +42,7 @@ else
     "vuepoint-core-0.1.0.tgz"
     "vuepoint-vue-0.1.0.tgz"
     "vite-plugin-vuepoint-0.1.0.tgz"
+    "vuepoint-api-0.1.0.tgz"
     "vuepoint-mcp-0.1.0.tgz"
   )
 fi
@@ -175,13 +177,16 @@ else
   fi
 fi
 
-# Install MCP server as devDependency
-if grep -q '"@vuepoint/mcp"' package.json 2>/dev/null; then
-  skip "@vuepoint/mcp already in package.json"
+# Install API server and MCP server as devDependencies
+if grep -q '"@vuepoint/api"' package.json 2>/dev/null \
+  && grep -q '"@vuepoint/mcp"' package.json 2>/dev/null; then
+  skip "@vuepoint/api and @vuepoint/mcp already in package.json"
 else
-  pnpm add -D "./$TARBALL_DIR/vuepoint-mcp-0.1.0.tgz" \
-    || fail "Failed to install @vuepoint/mcp"
-  ok "Added @vuepoint/mcp (dev)"
+  pnpm add -D \
+    "./$TARBALL_DIR/vuepoint-api-0.1.0.tgz" \
+    "./$TARBALL_DIR/vuepoint-mcp-0.1.0.tgz" \
+    || fail "Failed to install @vuepoint/api or @vuepoint/mcp"
+  ok "Added @vuepoint/api, @vuepoint/mcp (dev)"
 fi
 
 # Run install to resolve everything
@@ -341,6 +346,20 @@ VUEEOF
   fi
 fi
 
+# Add dev:vuepoint-api script to package.json
+if node -e "const p=JSON.parse(require('fs').readFileSync('package.json','utf8')); process.exit(p.scripts?.['dev:vuepoint-api'] ? 0 : 1)" 2>/dev/null; then
+  skip "\"dev:vuepoint-api\" script already exists"
+else
+  node -e "
+    const fs = require('fs');
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    if (!pkg.scripts) pkg.scripts = {};
+    pkg.scripts['dev:vuepoint-api'] = 'vuepoint-api';
+    fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+  "
+  ok "Added \"dev:vuepoint-api\" script to package.json"
+fi
+
 echo ""
 
 # ── Done ──────────────────────────────────────────────────────────────────────
@@ -357,31 +376,57 @@ echo ""
 if $IS_STORYBOOK; then
   echo "  Next steps:"
   echo ""
-  echo "    1. Start Storybook:"
+  echo "    1. Start the VuePoint API server (keep running in a separate terminal):"
+  echo "       pnpm dev:vuepoint-api"
+  echo ""
+  echo "    2. Start Storybook:"
   echo "       pnpm storybook"
   echo ""
-  echo "    2. Look for the VuePoint FAB (floating button) in the bottom-right corner"
+  echo "    3. Look for the VuePoint FAB (floating button) in the bottom-right corner"
   echo ""
-  echo "    3. Click \"Annotate\", then click any element in a story"
+  echo "    4. Click \"Annotate\", then click any element in a story"
   echo ""
-  echo "    4. Describe the issue → submit → copy for AI agents"
+  echo "    5. Describe the issue → submit → copy for AI agents"
   echo ""
   echo "  Keyboard shortcut: Ctrl+Shift+A (Cmd+Shift+A on Mac)"
+  echo ""
+  echo "  MCP (for AI agents like Cursor/Claude):"
+  echo "    Add to your MCP config:"
+  echo "    {"
+  echo "      \"mcpServers\": {"
+  echo "        \"vuepoint\": {"
+  echo "          \"command\": \"./node_modules/.bin/vuepoint-mcp\""
+  echo "        }"
+  echo "      }"
+  echo "    }"
 else
   echo "  Next steps:"
   echo ""
-  echo "    1. Start the dev server:"
+  echo "    1. Start the VuePoint API server (keep running in a separate terminal):"
+  echo "       pnpm dev:vuepoint-api"
+  echo ""
+  echo "    2. Start the dev server:"
   echo "       pnpm dev"
   echo ""
-  echo "    2. Open the URL Vite prints (usually http://localhost:5173)"
+  echo "    3. Open the URL Vite prints (usually http://localhost:5173)"
   echo ""
-  echo "    3. Click the \"Annotate\" button in the bottom-right corner"
+  echo "    4. Click the \"Annotate\" button in the bottom-right corner"
   echo ""
-  echo "    4. Click any element → describe the issue → submit"
+  echo "    5. Click any element → describe the issue → submit"
   echo ""
-  echo "    5. Click the clipboard icon to copy annotations for AI agents"
+  echo "    6. Click the clipboard icon to copy annotations for AI agents"
   echo ""
   echo "  Keyboard shortcut: Ctrl+Shift+A (Cmd+Shift+A on Mac)"
+  echo ""
+  echo "  MCP (for AI agents like Cursor/Claude):"
+  echo "    Add to your MCP config:"
+  echo "    {"
+  echo "      \"mcpServers\": {"
+  echo "        \"vuepoint\": {"
+  echo "          \"command\": \"./node_modules/.bin/vuepoint-mcp\""
+  echo "        }"
+  echo "      }"
+  echo "    }"
 fi
 
 echo ""
