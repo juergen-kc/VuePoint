@@ -70,9 +70,10 @@ export default function vuePointPlugin(
       injected = true
 
       // Build options string for the .use() call
-      const optionsStr = Object.keys(vuepointOptions).length > 0
-        ? `, ${JSON.stringify(vuepointOptions)}`
-        : ''
+      // Always pass enabled: true — the vite plugin only runs during dev (apply: 'serve')
+      // so we bypass the production guard which can misfire in pre-bundled code
+      const runtimeOptions = { enabled: true, ...vuepointOptions }
+      const optionsStr = `, ${JSON.stringify(runtimeOptions)}`
 
       // Inject import at the top of the file
       const importLine = `import { VuePoint as __VuePoint__ } from '@vuepoint/vue'\n`
