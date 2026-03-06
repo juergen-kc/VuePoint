@@ -78,6 +78,7 @@ VuePoint supports several annotation modes beyond single-element click:
 | Mode | Trigger | Use Case |
 |------|---------|----------|
 | **Click** | Click element | Annotate a single element |
+| **Quick copy** | <kbd>⌘C</kbd> / <kbd>Ctrl</kbd>+<kbd>C</kbd> while hovering | Copy element context to clipboard instantly |
 | **Multi-select** | <kbd>Shift</kbd>+Drag | Select multiple related elements |
 | **Area select** | <kbd>Alt</kbd>+Drag | Annotate layout/spacing (no specific element) |
 | **Text select** | Select text, then click toolbar | Flag copy issues or typos |

@@ -7,7 +7,7 @@
  * and SFC file paths so agents can find the exact code without guessing.
  */
 
-import type { Annotation, MarkdownOutputOptions } from './types.js'
+import type { Annotation, MarkdownOutputOptions, VueComponentInfo } from './types.js'
 
 // ─── Single annotation ────────────────────────────────────────────────────────
 
@@ -105,6 +105,33 @@ export function formatAnnotation(
     lines.push(`**Screenshot:**`)
     lines.push(`![annotation](${ann.screenshot})`)
   }
+
+  return lines.join('\n')
+}
+
+// ─── Quick-copy context (compact plaintext for clipboard) ────────────────────
+
+export function formatElementContext(opts: {
+  elementDescription: string
+  selector: string
+  componentChain: VueComponentInfo[]
+}): string {
+  const lines: string[] = []
+
+  lines.push(opts.elementDescription)
+
+  if (opts.componentChain.length > 0) {
+    const chain = opts.componentChain.map((c) => `<${c.name}>`).join(' → ')
+    lines.push(`in ${chain}`)
+
+    const withFile = [...opts.componentChain].reverse().find((c) => c.file)
+    if (withFile?.file) {
+      const display = withFile.file.replace(/^.*?src\//, 'src/')
+      lines.push(`at ${display}`)
+    }
+  }
+
+  lines.push(`Selector: ${opts.selector}`)
 
   return lines.join('\n')
 }

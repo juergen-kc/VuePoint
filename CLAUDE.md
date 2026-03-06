@@ -78,6 +78,7 @@ Browser Tab (Vue plugin) → SharedWorker (canonical state) → API server (:374
 - **Separate Vue app for toolbar** — mounted to `#__vuepoint-root` to avoid polluting host component tree
 - **Production guard** — plugin auto-disables when `NODE_ENV !== 'development'`
 - **PrimeVue filtering** — component chain extraction filters out PrimeVue internals by default
+- **Quick copy** — ⌘C/Ctrl+C in annotation mode copies element context (selector, chain, file) to clipboard via `formatElementContext()`
 
 ## VuePoint MCP Agent Workflow
 

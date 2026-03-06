@@ -14,7 +14,7 @@ export type {
 } from './types.js'
 
 export { generateSelector, describeElement } from './selector.js'
-export { formatAnnotation, formatAnnotationBatch, generateId, now } from './output.js'
+export { formatAnnotation, formatAnnotationBatch, formatElementContext, generateId, now } from './output.js'
 export { PRIMEVUE_FILTER, VUE_BUILTINS, buildFilter } from './primevue-filter.js'
 export {
   toSlackMessage,

@@ -21,6 +21,7 @@ import {
   generateSelector,
   describeElement,
   formatAnnotationBatch,
+  formatElementContext,
 } from '@vuepoint/core'
 import { useVueInspector } from '../composables/useVueInspector.js'
 import type { AnnotationsStore } from '../composables/useAnnotations.js'
@@ -225,6 +226,7 @@ function enterAnnotationMode() {
   document.addEventListener('click', handleDocumentClick, true)
   document.addEventListener('mousemove', handleMouseMove, { passive: true })
   document.addEventListener('mousedown', handleDragStart, true)
+  document.addEventListener('keydown', handleQuickCopy, true)
   document.body.style.cursor = 'crosshair'
 }
 
@@ -233,6 +235,7 @@ function exitAnnotationMode() {
   document.removeEventListener('click', handleDocumentClick, true)
   document.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('mousedown', handleDragStart, true)
+  document.removeEventListener('keydown', handleQuickCopy, true)
   document.removeEventListener('mousemove', handleDragMove)
   document.removeEventListener('mouseup', handleDragEnd, true)
   document.body.style.cursor = ''
@@ -549,6 +552,26 @@ function removePauseStyle() {
 // ─── Copy all ─────────────────────────────────────────────────────────────────
 
 const copied = ref(false)
+const quickCopied = ref(false)
+
+async function handleQuickCopy(e: KeyboardEvent) {
+  if (!(e.metaKey || e.ctrlKey) || e.key !== 'c') return
+  if (!hoveredElement.value) return
+
+  e.preventDefault()
+  e.stopPropagation()
+
+  const el = hoveredElement.value
+  const text = formatElementContext({
+    elementDescription: describeElement(el),
+    selector: generateSelector(el),
+    componentChain: getComponentChain(el),
+  })
+
+  await navigator.clipboard.writeText(text)
+  quickCopied.value = true
+  setTimeout(() => (quickCopied.value = false), 1500)
+}
 
 async function copyAll() {
   const md = formatAnnotationBatch(annotations.value)
@@ -622,7 +645,11 @@ function getCurrentRoute(): string | undefined {
       v-if="mode === 'annotating' && !isDragging && hoveredElement"
       class="vp-highlight"
       :style="highlightStyle(hoveredElement)"
-    />
+    >
+      <Transition name="vp-toast">
+        <span v-if="quickCopied" class="vp-quick-copy-toast">Copied!</span>
+      </Transition>
+    </div>
 
     <!-- Annotation markers (numbered badges on annotated elements) -->
     <AnnotationMarker
@@ -948,6 +975,26 @@ function getCurrentRoute(): string | undefined {
   z-index: 2147483646;
   transition: all 0.1s ease;
 }
+
+.vp-quick-copy-toast {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--vp-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.vp-toast-enter-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.vp-toast-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
+.vp-toast-enter-from,
+.vp-toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(4px); }
 
 /* ── Toolbar FAB ─────────────────────────────────────────────────────────── */
 .vp-toolbar {

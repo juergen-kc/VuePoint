@@ -14,18 +14,20 @@ You don't need to understand the code. Here's how to use VuePoint once a develop
 
 3. **Click on any element** you want to give feedback on. The cursor will change to a crosshair.
 
-4. **Type your feedback** in the box that appears. Be specific:
+4. **Quick copy (optional):** While hovering over an element, press `⌘C` (Mac) or `Ctrl+C` to instantly copy the element's context (selector, component chain, file path) to your clipboard — no form needed. Perfect for pasting directly into a chat with an AI agent.
+
+5. **Type your feedback** in the box that appears. Be specific:
    - ✅ "The 'Add User' button should be greyed out while the page is loading"
    - ✅ "This dropdown closes when I click inside it — it should stay open"
    - ❌ "Fix the button" ← too vague for an AI agent
 
-5. **Click "Add Annotation"** (or press `Cmd+Enter`).
+6. **Click "Add Annotation"** (or press `Cmd+Enter`).
 
-6. **Repeat** for any other issues you've spotted.
+7. **Repeat** for any other issues you've spotted.
 
-7. **Click the copy icon** (clipboard) to copy all your annotations as structured text.
+8. **Click the copy icon** (clipboard) to copy all your annotations as structured text.
 
-8. **Paste into Claude Code or Cursor** — the AI agent will see exactly which component and file to look at, no back-and-forth needed.
+9. **Paste into Claude Code or Cursor** — the AI agent will see exactly which component and file to look at, no back-and-forth needed.
 
 ---
 

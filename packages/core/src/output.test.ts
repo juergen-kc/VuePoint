@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { formatAnnotation, formatAnnotationBatch, generateId, now } from './output'
+import { formatAnnotation, formatAnnotationBatch, formatElementContext, generateId, now } from './output'
 import type { Annotation } from './types'
 
 function makeAnnotation(overrides: Partial<Annotation> = {}): Annotation {
@@ -210,6 +210,62 @@ describe('output.ts', () => {
       const result = formatAnnotationBatch(annotations)
       expect(result).toContain('> 1 pending annotation')
       expect(result).not.toContain('annotations')
+    })
+  })
+
+  describe('formatElementContext()', () => {
+    it('includes all lines when component chain has files', () => {
+      const result = formatElementContext({
+        elementDescription: '<button> "Save"',
+        selector: '.my-component > button.primary',
+        componentChain: [
+          { name: 'App' },
+          { name: 'UserView', file: 'src/views/UserView.vue' },
+          { name: 'SaveButton', file: 'src/components/SaveButton.vue' },
+        ],
+      })
+      expect(result).toBe(
+        '<button> "Save"\n' +
+        'in <App> → <UserView> → <SaveButton>\n' +
+        'at src/components/SaveButton.vue\n' +
+        'Selector: .my-component > button.primary'
+      )
+    })
+
+    it('omits component chain and file when chain is empty', () => {
+      const result = formatElementContext({
+        elementDescription: '<div> "Hello"',
+        selector: 'div.greeting',
+        componentChain: [],
+      })
+      expect(result).toBe(
+        '<div> "Hello"\n' +
+        'Selector: div.greeting'
+      )
+    })
+
+    it('omits file line when no component has a file path', () => {
+      const result = formatElementContext({
+        elementDescription: '<span> "Text"',
+        selector: 'span.label',
+        componentChain: [{ name: 'App' }, { name: 'MyComponent' }],
+      })
+      expect(result).toBe(
+        '<span> "Text"\n' +
+        'in <App> → <MyComponent>\n' +
+        'Selector: span.label'
+      )
+    })
+
+    it('strips absolute path prefix, keeping src/', () => {
+      const result = formatElementContext({
+        elementDescription: '<input[text]> "Search"',
+        selector: 'input.search',
+        componentChain: [
+          { name: 'SearchBar', file: '/Users/dev/project/src/components/SearchBar.vue' },
+        ],
+      })
+      expect(result).toContain('at src/components/SearchBar.vue')
     })
   })
 

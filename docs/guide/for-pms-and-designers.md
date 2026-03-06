@@ -98,6 +98,25 @@ Here's an example of what the AI agent receives:
 Unlike a screenshot or a Slack message saying "the button is broken," this output gives the agent the **exact file path**, **component name**, and **CSS selector** it needs to find and fix the code. What would take a developer minutes to locate takes the agent seconds.
 :::
 
+## Quick Copy
+
+Sometimes you don't need the full annotation form — you just want to grab an element's context and paste it into a chat. While in annotation mode:
+
+1. **Hover** over any element (it highlights in blue)
+2. Press <kbd>⌘C</kbd> (Mac) or <kbd>Ctrl</kbd>+<kbd>C</kbd>
+3. A "Copied!" toast appears — the element's context is now on your clipboard
+
+What gets copied:
+
+```
+<button> "Save Changes"
+in <App> → <SettingsView> → <UserForm>
+at src/views/settings/UserForm.vue
+Selector: .user-form > .actions > button.submit-btn
+```
+
+This is ideal for quick bug reports or pasting context into an AI agent chat without creating a formal annotation.
+
 ## Additional Annotation Modes
 
 Beyond clicking a single element, VuePoint supports three more ways to annotate:
